@@ -6,7 +6,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"gitlab.pg.innopolis.university/v.kishkovskiy/htmx-golang-crud/pkg/models"
+	"github.com/deeprecession/golang-htmx-crud/pkg/models"
 )
 
 type UserStorage interface {

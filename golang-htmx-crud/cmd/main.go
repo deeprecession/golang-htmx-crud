@@ -12,9 +12,9 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	_ "github.com/lib/pq"
 
-	"gitlab.pg.innopolis.university/v.kishkovskiy/htmx-golang-crud/pkg/db"
-	"gitlab.pg.innopolis.university/v.kishkovskiy/htmx-golang-crud/pkg/handlers"
-	"gitlab.pg.innopolis.university/v.kishkovskiy/htmx-golang-crud/pkg/models"
+	"github.com/deeprecession/golang-htmx-crud/pkg/db"
+	"github.com/deeprecession/golang-htmx-crud/pkg/handlers"
+	"github.com/deeprecession/golang-htmx-crud/pkg/models"
 )
 
 type Templates struct {
