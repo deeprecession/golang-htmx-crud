@@ -1,6 +1,12 @@
 linters:
   enable-all: true
   disable:
+    - gci # not using gci
+    - wrapcheck # conflict with Echo
+    - err113 # want to Errorf wthout wrapping
+    - exhaustruct # because can't SomeStruct{}
+    - depguard # don't want to clean main now
+    - execinquery # Deprecated
     - deadcode # Deprecated
     - exhaustivestruct # Deprecated
     - golint # Deprecated
