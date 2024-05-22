@@ -13,11 +13,23 @@ func CreatePostgresDatabase(log *slog.Logger, psqlInfo string) (*sql.DB, error) 
 		return nil, fmt.Errorf("Failed to open a database")
 	}
 
-	err = db.Ping()
+	err = initPostgresScheme(db)
 	if err != nil {
-		log.Error("Failed to ping a database after opening it")
-		return nil, fmt.Errorf("Failed to ping a database after opening it")
+		log.Error("Failed to init postgres scheme")
+		return nil, fmt.Errorf("Failed to init postgres scheme")
 	}
 
 	return db, nil
+}
+
+func initPostgresScheme(db *sql.DB) error {
+	const init_query = `CREATE TABLE IF NOT EXISTS tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    title TEXT UNIQUE NOT NULL,
+    is_done BOOLEAN NOT NULL DEFAULT FALSE
+);`
+
+	_, err := db.Exec(init_query)
+
+	return err
 }

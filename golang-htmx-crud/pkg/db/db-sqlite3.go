@@ -13,20 +13,15 @@ func CreateSQLiteDatabase(sqlitePath string) (*sql.DB, error) {
 		return nil, fmt.Errorf("Failed to open a sqlite database: bad path=%v", sqlitePath)
 	}
 
-	err = db.Ping()
+	err = initSQLiteScheme(db)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to ping a sqlite database after opening it")
-	}
-
-	err = initDB(db)
-	if err != nil {
-		return db, nil
+		return nil, fmt.Errorf("Failed to init SQLite scheme")
 	}
 
 	return db, nil
 }
 
-func initDB(db *sql.DB) error {
+func initSQLiteScheme(db *sql.DB) error {
 	const init_query = `CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     title TEXT UNIQUE NOT NULL,
