@@ -59,11 +59,15 @@ func (tl *TaskList) NewTask(title string, isDone bool) (Task, error) {
 	if err != nil {
 		return Task{}, fmt.Errorf("%s: failed to prepare a statement: %q", funcErrMsg, err)
 	}
-	defer stmt.Close()
 
 	_, err = stmt.Exec(title, isDone)
 	if err != nil {
 		return Task{}, fmt.Errorf("%s: failed to execute a statement: %q", funcErrMsg, err)
+	}
+
+	err = stmt.Close()
+	if err != nil {
+		return Task{}, fmt.Errorf("%s: failed to close a stmt: %q", funcErrMsg, err)
 	}
 
 	task, err := tl.GetTaskByTitle(title)
@@ -91,6 +95,11 @@ func (tl *TaskList) HasTask(title string) (bool, error) {
 
 	hasTask := result.Next()
 
+	err = result.Close()
+	if err != nil {
+		return false, fmt.Errorf("%s: failed to close a result: %q", funcErrMsg, err)
+	}
+
 	return hasTask, nil
 }
 
@@ -105,6 +114,11 @@ func (tl *TaskList) RemoveTask(id int) error {
 	_, err = stmt.Exec(id)
 	if err != nil {
 		return fmt.Errorf("%s: failed to execute a query: %q", funcErrMsg, err)
+	}
+
+	err = stmt.Close()
+	if err != nil {
+		return fmt.Errorf("%s: failed to close a stmt: %q", funcErrMsg, err)
 	}
 
 	return nil
@@ -134,6 +148,11 @@ func (tl *TaskList) GetTask(id int) (Task, error) {
 		return Task{}, fmt.Errorf("%s: failed to scan a query respone: %q", funcErrMsg, err)
 	}
 
+	err = result.Close()
+	if err != nil {
+		return Task{}, fmt.Errorf("%s: failed to close a result: %q", funcErrMsg, err)
+	}
+
 	return task, nil
 }
 
@@ -161,6 +180,11 @@ func (tl *TaskList) GetTaskByTitle(title string) (Task, error) {
 		return Task{}, fmt.Errorf("%s: failed to scan a query respone: %q", funcErrMsg, err)
 	}
 
+	err = result.Close()
+	if err != nil {
+		return Task{}, fmt.Errorf("%s: failed to close a result: %q", funcErrMsg, err)
+	}
+
 	return task, nil
 }
 
@@ -184,6 +208,11 @@ func (tl *TaskList) SetDoneStatus(id int, is_done bool) error {
 
 	if rowsAffected == 0 {
 		return fmt.Errorf("%s: no rows affected", funcErrMsg)
+	}
+
+	err = stmt.Close()
+	if err != nil {
+		return fmt.Errorf("%s: failed to close a stmt: %q", funcErrMsg, err)
 	}
 
 	return nil

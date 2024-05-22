@@ -60,7 +60,8 @@ func main() {
 		},
 	}))
 
-	db_connection, err := db.CreateDatabase(log)
+	const sqlitePath = "./sqlite.db"
+	db_connection, err := db.CreateSQLiteDatabase(sqlitePath)
 	if err != nil {
 		log.Error("Failed to create a db connecdtion: ", err)
 		os.Exit(1)
