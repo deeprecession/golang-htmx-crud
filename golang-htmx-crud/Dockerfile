@@ -20,7 +20,6 @@ FROM alpine
 WORKDIR /
 
 ADD views views
-COPY .env .
 COPY --from=build-stage /htmx-golang-crud htmx-golang-crud
 
 EXPOSE 42069
