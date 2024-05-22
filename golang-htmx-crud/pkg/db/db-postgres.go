@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"os"
 )
 
 func CreatePostgresDatabase(log *slog.Logger, psqlInfo string) (*sql.DB, error) {
@@ -26,7 +27,7 @@ func CreatePostgresDatabase(log *slog.Logger, psqlInfo string) (*sql.DB, error) 
 
 func initPostgresScheme(postgresDB *sql.DB) error {
 	const initQuery = `CREATE TABLE IF NOT EXISTS tasks (
-    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    id SERIAL PRIMARY KEY NOT NULL,
     title TEXT UNIQUE NOT NULL,
     is_done BOOLEAN NOT NULL DEFAULT FALSE
 );`
@@ -37,4 +38,23 @@ func initPostgresScheme(postgresDB *sql.DB) error {
 	}
 
 	return nil
+}
+
+func GetPsqlInfoFromEnv() string {
+	username := os.Getenv("DB_USER")
+	port := os.Getenv("DB_PORT")
+	pswd := os.Getenv("DB_PASSWORD")
+	host := os.Getenv("DB_HOST")
+	dbname := os.Getenv("DB_NAME")
+
+	psqlInfo := fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		username,
+		pswd,
+		host,
+		port,
+		dbname,
+	)
+
+	return psqlInfo
 }

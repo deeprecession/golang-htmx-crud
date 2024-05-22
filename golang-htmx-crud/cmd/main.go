@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"io"
 	"log/slog"
+	"os"
 
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
@@ -37,9 +38,9 @@ func main() {
 
 	httpServer.Use(handlers.NewLoggerMiddleware(log))
 
-	const sqlitePath = "./sqlite.db"
+	curEnv := os.Getenv("ENVIRONMENT")
 
-	dbConneciton, err := db.CreateSQLiteDatabase(sqlitePath)
+	dbConnection, err := db.GetDB(log, curEnv)
 	if err != nil {
 		log.Error("Failed to create a db connecdtion", "err", err)
 
@@ -47,12 +48,12 @@ func main() {
 	}
 
 	defer func() {
-		if err := dbConneciton.Close(); err != nil {
+		if err := dbConnection.Close(); err != nil {
 			log.Error("failed to close database connection", "err", err)
 		}
 	}()
 
-	tasklist, err := models.GetTaskList(dbConneciton, log)
+	tasklist, err := models.GetTaskList(dbConnection, log)
 	if err != nil {
 		log.Error("failed to get tasklist:", "err", err)
 
@@ -63,7 +64,7 @@ func main() {
 	baseTaskHandler := handlers.NewBaseTaskHandler(&tasklist, &page, log)
 
 	httpServer.GET("/", func(ctx echo.Context) error {
-		tasklist, err := models.GetTaskList(dbConneciton, log)
+		tasklist, err := models.GetTaskList(dbConnection, log)
 		if err != nil {
 			log.Error("failed to get tasklist:", "err", err)
 		}
