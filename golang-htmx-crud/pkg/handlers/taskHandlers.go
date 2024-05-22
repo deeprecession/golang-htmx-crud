@@ -96,6 +96,14 @@ func (h BaseHandler) CreateTaskHandler(c echo.Context) error {
 	isDone := false
 
 	task, err := h.storage.NewTask(taskTitle, isDone)
+	if err == models.ErrTaskAlreadyExist {
+		newFormData := h.pageCreator.NewFormData()
+		newFormData.Values["Title"] = taskTitle
+		newFormData.Errors["Title"] = "Task already exist"
+
+		return c.Render(200, "create-task-form", newFormData)
+	}
+
 	if err != nil {
 		h.log.Error("Failed to create a task", "err", err)
 		return c.String(500, "Failed to create a task")

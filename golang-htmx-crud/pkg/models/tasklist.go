@@ -55,6 +55,14 @@ func GetTaskList(db *sql.DB, logger *slog.Logger) (TaskList, error) {
 func (tl *TaskList) NewTask(title string, isDone bool) (Task, error) {
 	const funcErrMsg = "models.NewTask"
 
+	is_task_exist, err := tl.HasTask(title)
+	if err != nil {
+		return Task{}, fmt.Errorf("%s: failed to check is task exist: %q", funcErrMsg, err)
+	}
+	if is_task_exist {
+		return Task{}, ErrTaskAlreadyExist
+	}
+
 	stmt, err := tl.db.Prepare("INSERT INTO tasks(title, is_done) VALUES ($1, $2)")
 	if err != nil {
 		return Task{}, fmt.Errorf("%s: failed to prepare a statement: %q", funcErrMsg, err)
