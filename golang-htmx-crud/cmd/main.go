@@ -1,16 +1,14 @@
 package main
 
 import (
-	"context"
 	"html/template"
 	"io"
 	"log/slog"
-	"os"
 
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/deeprecession/golang-htmx-crud/pkg/db"
 	"github.com/deeprecession/golang-htmx-crud/pkg/handlers"
@@ -27,76 +25,59 @@ func newTemplate() *Templates {
 	}
 }
 
-func (t *Templates) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+func (t *Templates) Render(w io.Writer, name string, data interface{}, _ echo.Context) error {
 	return t.templates.ExecuteTemplate(w, name, data)
 }
 
 func main() {
-	e := echo.New()
-	e.Renderer = newTemplate()
+	httpServer := echo.New()
+	httpServer.Renderer = newTemplate()
 
 	log := slog.Default()
-	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
-		LogStatus:   true,
-		LogURI:      true,
-		LogError:    true,
-		HandleError: true,
-		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
-			if v.Error == nil {
-				log.LogAttrs(context.Background(), slog.LevelInfo, "REQUEST",
-					slog.String("uri", v.URI),
-					slog.String("method", v.Method),
-					slog.Int("status", v.Status),
-				)
-			} else {
-				log.LogAttrs(context.Background(), slog.LevelError, "REQUEST_ERROR",
-					slog.String("uri", v.URI),
-					slog.String("method", v.Method),
-					slog.Int("status", v.Status),
-					slog.String("err", v.Error.Error()),
-				)
-			}
-			return nil
-		},
-	}))
+
+	httpServer.Use(handlers.NewLoggerMiddleware(log))
 
 	const sqlitePath = "./sqlite.db"
-	db_connection, err := db.CreateSQLiteDatabase(sqlitePath)
+
+	dbConneciton, err := db.CreateSQLiteDatabase(sqlitePath)
 	if err != nil {
-		log.Error("Failed to create a db connecdtion: ", err)
-		os.Exit(1)
+		log.Error("Failed to create a db connecdtion", "err", err)
+
+		return
 	}
+
 	defer func() {
-		if err := db_connection.Close(); err != nil {
-			log.Error("failed to close database connection:", err)
+		if err := dbConneciton.Close(); err != nil {
+			log.Error("failed to close database connection", "err", err)
 		}
 	}()
 
-	tasklist, err := models.GetTaskList(db_connection, log)
+	tasklist, err := models.GetTaskList(dbConneciton, log)
 	if err != nil {
-		log.Error("Failed to get tasklist: %q", err)
-		os.Exit(1)
+		log.Error("failed to get tasklist:", "err", err)
+
+		return
 	}
+
 	page := models.NewPage(tasklist)
 	baseTaskHandler := handlers.NewBaseTaskHandler(&tasklist, &page, log)
 
-	e.GET("/", func(c echo.Context) error {
-		tasklist, err := models.GetTaskList(db_connection, log)
+	httpServer.GET("/", func(ctx echo.Context) error {
+		tasklist, err := models.GetTaskList(dbConneciton, log)
 		if err != nil {
-			log.Error("Failed to get tasklist: %q", err)
-			os.Exit(1)
+			log.Error("failed to get tasklist:", "err", err)
 		}
 
 		page := models.NewPage(tasklist)
 
-		return c.Render(200, "index", page)
+		return ctx.Render(handlers.OkResponse, "index", page)
 	})
-	e.PUT("/task/:id", baseTaskHandler.ToggleDoneStatusTaskHandler)
-	e.DELETE("/task/:id", baseTaskHandler.RemoveTaskHandler)
-	e.POST("/tasks", baseTaskHandler.CreateTaskHandler)
+	httpServer.PUT("/task/:id", baseTaskHandler.ToggleDoneStatusTaskHandler)
+	httpServer.DELETE("/task/:id", baseTaskHandler.RemoveTaskHandler)
+	httpServer.POST("/tasks", baseTaskHandler.CreateTaskHandler)
 
-	e.Use(echoprometheus.NewMiddleware("myapp"))
-	e.GET("/metrics", echoprometheus.NewHandler())
+	httpServer.Use(echoprometheus.NewMiddleware("myapp"))
+	httpServer.GET("/metrics", echoprometheus.NewHandler())
 
-	e.Logger.Fatal(e.Start(":42069"))
+	httpServer.Logger.Fatal(httpServer.Start(":42069"))
 }

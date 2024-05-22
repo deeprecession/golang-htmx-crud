@@ -2,4 +2,4 @@ package models
 
 import "errors"
 
-var ErrTaskAlreadyExist error = errors.New("Task already exist")
+var ErrTaskAlreadyExist = errors.New("Task already exist")
