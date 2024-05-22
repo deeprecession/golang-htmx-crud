@@ -13,7 +13,7 @@ services:
 
   app_1:
     build:
-      context: .
+      context: ./golang-htmx-crud
       dockerfile: Dockerfile
     restart: unless-stopped
     env_file:
@@ -25,7 +25,7 @@ services:
 
   app_2:
     build:
-      context: .
+      context: ./golang-htmx-crud
       dockerfile: Dockerfile
     restart: unless-stopped
     env_file:
@@ -37,7 +37,7 @@ services:
 
   app_3:
     build:
-      context: .
+      context: ./golang-htmx-crud
       dockerfile: Dockerfile
     restart: unless-stopped
     env_file:
