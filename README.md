@@ -1,4 +1,4 @@
-# sna-project
+# golang-htmx-crud
 
 ## Setup Instructions
 
@@ -13,9 +13,7 @@ DB_PASSWORD="default"
 
 ## Services
 
-`::8080` balancer for webapp
-
-`app_[1-3]:42069` webapp server
+`:8080` webapp server
 
 - GET `/`
 - GET `/metrics` statistics for Prometheus
