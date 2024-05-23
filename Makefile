@@ -1,18 +1,36 @@
-PROJECT_NAME := htmx-golang-crud
+PROJECT_NAME := golang-htmx-crud
 
-build-app-image:
-	docker build --rm --no-cache -t "$(PROJECT_NAME)-app" ./golang-htmx-crud
 
-run-app-image:
-	docker run --rm --label "$(PROJECT_NAME)-app" "$(PROJECT_NAME)-app":latest -p 5432:5432
+## up-db: `docker-compose up` a db image
+.PHONY: up-db
+up-db:
+	docker-compose up db -d
 
-build-db-image:
-	docker build --rm --no-cache -t "$(PROJECT_NAME)-db" -f ./docker/postgres/Dockerfile .
 
-build-prometheus-image:
-	docker build --rm --no-cache -t "$(PROJECT_NAME)-prometheus" -f ./docker/prometheus/Dockerfile .
+## run-app: start golang app with ./.env enviroment
+.PHONY: run-app
+run-app: up-db
+	./.env
+	$(MAKE) -C ./golang-htmx-crud run
 
-build-all-images: build-app-image build-db-image build-prometheus-image
 
-run:
+## air: run `air` for ./golang-htmx-crud with ./.env enviroment
+.PHONY: air
+air: up-db
+	@set -a; \
+		. ./.env; \
+		$(MAKE) -C ./golang-htmx-crud air
+
+
+## up: run docker-compose up --build
+.PHONY: up
+up:
 	docker-compose up --build
+
+
+## help: print this help message
+.PHONY: help
+help:
+	@echo 'Usage:'
+	@sed -n 's/^##//p' ${MAKEFILE_LIST} | column -t -s ':' |  sed -e 's/^/ /'
+

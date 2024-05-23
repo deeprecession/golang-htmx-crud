@@ -21,7 +21,7 @@ audit:
 
 ## build: builds a package
 .PHONY: build
-build:
+build: tidy
 	go build -o=${BINARY_PATH} ${MAIN_PACKAGE_PATH}
 
 
@@ -29,6 +29,12 @@ build:
 .PHONY: run
 run: build
 	${BINARY_PATH}
+
+
+## air: run `air` for current project
+.PHONY: air
+air: tidy
+	air
 
 
 ## help: print this help message
