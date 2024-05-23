@@ -5,11 +5,11 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
 	_ "github.com/lib/pq"
-	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/deeprecession/golang-htmx-crud/pkg/db"
 	"github.com/deeprecession/golang-htmx-crud/pkg/handlers"
@@ -38,13 +38,21 @@ func main() {
 
 	httpServer.Use(handlers.NewLoggerMiddleware(log))
 
-	curEnv := os.Getenv("ENVIRONMENT")
-
-	dbConnection, err := db.GetDB(log, curEnv)
+	psqlInfo, err := db.GetPsqlInfoFromEnv()
 	if err != nil {
-		log.Error("Failed to create a db connecdtion", "err", err)
+		log.Error("failed to get posqlInfo:", "err", err)
 
 		return
+	}
+
+	dbConnection, err := db.CreatePostgresDatabase(psqlInfo)
+
+	for err != nil {
+		log.Error("failed to connect to a database:", "psqlInfo", psqlInfo, "err", err)
+
+		time.Sleep(time.Second * 5)
+
+		dbConnection, err = db.CreatePostgresDatabase(psqlInfo)
 	}
 
 	defer func() {
@@ -80,5 +88,7 @@ func main() {
 	httpServer.Use(echoprometheus.NewMiddleware("myapp"))
 	httpServer.GET("/metrics", echoprometheus.NewHandler())
 
-	httpServer.Logger.Fatal(httpServer.Start(":42069"))
+	appPort := os.Getenv("APP_PORT")
+
+	httpServer.Logger.Fatal(httpServer.Start(":" + appPort))
 }
