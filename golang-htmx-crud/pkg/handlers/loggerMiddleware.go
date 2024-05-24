@@ -30,6 +30,7 @@ func NewLoggerMiddleware(log *slog.Logger) echo.MiddlewareFunc {
 
 	loggerConfig := middleware.RequestLoggerConfig{
 		LogStatus:     true,
+		LogMethod:     true,
 		LogURI:        true,
 		LogError:      true,
 		HandleError:   true,
