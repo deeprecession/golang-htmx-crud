@@ -22,6 +22,12 @@ air: up-db
 		$(MAKE) -C ./golang-htmx-crud air
 
 
+## audit: run `audit` target for golang project
+.PHONY: audit
+audit:
+	$(MAKE) -C ./golang-htmx-crud audit
+
+
 ## up: run docker-compose up --build
 .PHONY: up
 up:
