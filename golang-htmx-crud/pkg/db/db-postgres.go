@@ -21,10 +21,17 @@ func CreatePostgresDatabase(psqlInfo string) (*sql.DB, error) {
 }
 
 func initPostgresScheme(postgresDB *sql.DB) error {
-	const initQuery = `CREATE TABLE IF NOT EXISTS tasks (
+	const initQuery = `
+CREATE TABLE IF NOT EXISTS tasks (
     id SERIAL PRIMARY KEY NOT NULL,
     title TEXT UNIQUE NOT NULL,
     is_done BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY NOT NULL,
+    login TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL
 );`
 
 	_, err := postgresDB.Exec(initQuery)

@@ -94,3 +94,49 @@
     </div>
 
 {{ end }}
+
+
+{{ block "register" . }}
+
+    <div id="register-form" style="display: column;">
+        <form action="/register" method="POST">
+            <div id="register-form-login" style="display: flex;">
+                <label>login</label>
+                <input type="text" name="login">
+            </div>
+
+            <div id="register-form-password" style="display: flex;">
+                <label>password</label>
+                <input type="password" name="password">
+            </div>
+
+            <div style="display: flex;">
+                <button>register</button>
+            </div>
+        </form>
+    </div>
+
+{{ end }}
+
+
+{{ block "login" . }}
+
+    <div id="login-form" style="display: column;">
+        <form action="/login" method="POST">
+            <div id="login-form-login" style="display: flex;">
+                <label>login</label>
+                <input type="text" name="login">
+            </div>
+
+            <div id="login-form-password" style="display: flex;">
+                <label>password</label>
+                <input type="password" name="password">
+            </div>
+
+            <div style="display: flex;">
+                <button>login</button>
+            </div>
+        </form>
+    </div>
+
+{{ end }}

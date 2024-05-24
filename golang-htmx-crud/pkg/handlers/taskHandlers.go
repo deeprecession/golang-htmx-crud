@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"errors"
-	"log/slog"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
@@ -17,32 +16,6 @@ const (
 	InternalServerError = 500
 )
 
-type UserStorage interface {
-	SetDoneStatus(id int, isDone bool) error
-	RemoveTask(id int) error
-	NewTask(taskTitle string, isDone bool) (models.Task, error)
-	HasTask(taskTitle string) (bool, error)
-	GetTaskByID(taskID int) (models.Task, error)
-}
-
-type PageCreator interface {
-	NewFormData() models.FormData
-}
-
-type BaseHandler struct {
-	storage     UserStorage
-	pageCreator PageCreator
-	log         *slog.Logger
-}
-
-func NewBaseTaskHandler(
-	userStorage UserStorage,
-	pageCreator PageCreator,
-	logger *slog.Logger,
-) BaseHandler {
-	return BaseHandler{userStorage, pageCreator, logger}
-}
-
 func (h BaseHandler) ToggleDoneStatusTaskHandler(ctx echo.Context) error {
 	log := ctx.Logger()
 
@@ -55,7 +28,7 @@ func (h BaseHandler) ToggleDoneStatusTaskHandler(ctx echo.Context) error {
 
 	log.Info("PUT /task/:id", "id", taskID)
 
-	task, err := h.storage.GetTaskByID(taskID)
+	task, err := h.taskStorage.GetTaskByID(taskID)
 	if err != nil {
 		h.log.Error("Task not found", "err", err)
 
@@ -64,14 +37,14 @@ func (h BaseHandler) ToggleDoneStatusTaskHandler(ctx echo.Context) error {
 
 	newDoneStatus := !task.IsDone
 
-	err = h.storage.SetDoneStatus(taskID, newDoneStatus)
+	err = h.taskStorage.SetDoneStatus(taskID, newDoneStatus)
 	if err != nil {
 		h.log.Error("Task not found", "err", err)
 
 		return ctx.String(NotFoundError, "Task is not found")
 	}
 
-	updatedTask, err := h.storage.GetTaskByID(taskID)
+	updatedTask, err := h.taskStorage.GetTaskByID(taskID)
 	if err != nil {
 		h.log.Error("failed to get a task", "err", err)
 
@@ -93,7 +66,7 @@ func (h BaseHandler) RemoveTaskHandler(ctx echo.Context) error {
 
 	log.Info("DELETE /task/:id", "id", taskID)
 
-	err = h.storage.RemoveTask(taskID)
+	err = h.taskStorage.RemoveTask(taskID)
 	if err != nil {
 		h.log.Error("Task not found", "err", err)
 
@@ -109,7 +82,7 @@ func (h BaseHandler) CreateTaskHandler(ctx echo.Context) error {
 	taskTitle := ctx.FormValue("title")
 	isDone := false
 
-	task, err := h.storage.NewTask(taskTitle, isDone)
+	task, err := h.taskStorage.NewTask(taskTitle, isDone)
 	if errors.Is(err, models.ErrTaskAlreadyExist) {
 		newFormData := h.pageCreator.NewFormData()
 		newFormData.Values["Title"] = taskTitle

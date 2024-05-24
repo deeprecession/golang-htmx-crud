@@ -34,7 +34,11 @@ func main() {
 	httpServer := echo.New()
 	httpServer.Renderer = newTemplate()
 
-	log := slog.Default()
+	slogHandlerOptions := slog.HandlerOptions{
+		Level: slog.Level(slog.LevelDebug),
+	}
+	stdoutTextHandler := slog.NewTextHandler(os.Stdout, &slogHandlerOptions)
+	log := slog.New(stdoutTextHandler)
 
 	httpServer.Use(handlers.NewLoggerMiddleware(log))
 
@@ -68,8 +72,10 @@ func main() {
 		return
 	}
 
+	userStorage := models.GetUserStorage(log, dbConnection)
+
 	page := models.NewPage(tasklist)
-	baseTaskHandler := handlers.NewBaseTaskHandler(&tasklist, &page, log)
+	baseTaskHandler := handlers.NewBaseTaskHandler(&tasklist, &page, &userStorage, log)
 
 	httpServer.GET("/", func(ctx echo.Context) error {
 		tasklist, err := models.GetTaskList(dbConnection, log)
@@ -87,6 +93,12 @@ func main() {
 
 	httpServer.Use(echoprometheus.NewMiddleware("myapp"))
 	httpServer.GET("/metrics", echoprometheus.NewHandler())
+
+	httpServer.GET("/register", baseTaskHandler.RegisterPageHandler)
+	httpServer.POST("/register", baseTaskHandler.RegisterUserHandler)
+
+	httpServer.GET("/login", baseTaskHandler.LoginPageHandler)
+	httpServer.POST("/login", baseTaskHandler.LoginUserHandler)
 
 	appPort := os.Getenv("APP_PORT")
 
