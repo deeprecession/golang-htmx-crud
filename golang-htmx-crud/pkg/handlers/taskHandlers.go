@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"log/slog"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
@@ -9,102 +10,107 @@ import (
 	"github.com/deeprecession/golang-htmx-crud/pkg/models"
 )
 
-const (
-	BadRequestError     = 400
-	NotFoundError       = 404
-	OkResponse          = 200
-	InternalServerError = 500
-)
-
-func (h BaseHandler) ToggleDoneStatusTaskHandler(ctx echo.Context) error {
-	log := ctx.Logger()
-
-	taskID, err := strconv.Atoi(ctx.Param("id"))
-	if err != nil {
-		h.log.Error("Invalid id", "err", err)
-
-		return ctx.String(BadRequestError, "Invalid id")
-	}
-
-	log.Info("PUT /task/:id", "id", taskID)
-
-	task, err := h.taskStorage.GetTaskByID(taskID)
-	if err != nil {
-		h.log.Error("Task not found", "err", err)
-
-		return ctx.String(NotFoundError, "Task is not found")
-	}
-
-	newDoneStatus := !task.IsDone
-
-	err = h.taskStorage.SetDoneStatus(taskID, newDoneStatus)
-	if err != nil {
-		h.log.Error("Task not found", "err", err)
-
-		return ctx.String(NotFoundError, "Task is not found")
-	}
-
-	updatedTask, err := h.taskStorage.GetTaskByID(taskID)
-	if err != nil {
-		h.log.Error("failed to get a task", "err", err)
-
-		return ctx.String(NotFoundError, "Task is not found")
-	}
-
-	return ctx.Render(OkResponse, "task", updatedTask)
+type TaskStorage interface {
+	SetDoneStatus(id int, isDone bool) error
+	GetTasks() (models.Tasks, error)
+	RemoveTask(id int) error
+	NewTask(taskTitle string, isDone bool) (models.Task, error)
+	HasTask(taskTitle string) (bool, error)
+	GetTaskByID(taskID int) (models.Task, error)
 }
 
-func (h BaseHandler) RemoveTaskHandler(ctx echo.Context) error {
-	log := ctx.Logger()
+func ToggleDoneStatusTaskHandler(taskStorage TaskStorage, log *slog.Logger) echo.HandlerFunc {
+	return func(ctx echo.Context) error {
+		taskID, err := strconv.Atoi(ctx.Param("id"))
+		if err != nil {
+			log.Error("Invalid id", "err", err)
 
-	taskID, err := strconv.Atoi(ctx.Param("id"))
-	if err != nil {
-		h.log.Error("Invalid id", "err", err)
+			return ctx.String(BadRequestError, "Invalid id")
+		}
 
-		return ctx.String(BadRequestError, "Invalid id")
+		log.Info("PUT /task/:id", "id", taskID)
+
+		task, err := taskStorage.GetTaskByID(taskID)
+		if err != nil {
+			log.Error("Task not found", "err", err)
+
+			return ctx.String(NotFoundError, "Task is not found")
+		}
+
+		newDoneStatus := !task.IsDone
+
+		err = taskStorage.SetDoneStatus(taskID, newDoneStatus)
+		if err != nil {
+			log.Error("Task not found", "err", err)
+
+			return ctx.String(NotFoundError, "Task is not found")
+		}
+
+		updatedTask, err := taskStorage.GetTaskByID(taskID)
+		if err != nil {
+			log.Error("failed to get a task", "err", err)
+
+			return ctx.String(NotFoundError, "Task is not found")
+		}
+
+		return ctx.Render(OkResponse, "task", updatedTask)
 	}
-
-	log.Info("DELETE /task/:id", "id", taskID)
-
-	err = h.taskStorage.RemoveTask(taskID)
-	if err != nil {
-		h.log.Error("Task not found", "err", err)
-
-		return ctx.String(NotFoundError, "Task is not found")
-	}
-
-	return ctx.NoContent(OkResponse)
 }
 
-func (h BaseHandler) CreateTaskHandler(ctx echo.Context) error {
-	log := ctx.Logger()
+func RemoveTaskHandler(taskStorage TaskStorage, log *slog.Logger) echo.HandlerFunc {
+	return func(ctx echo.Context) error {
+		taskID, err := strconv.Atoi(ctx.Param("id"))
+		if err != nil {
+			log.Error("Invalid id", "err", err)
 
-	taskTitle := ctx.FormValue("title")
-	isDone := false
+			return ctx.String(BadRequestError, "Invalid id")
+		}
 
-	task, err := h.taskStorage.NewTask(taskTitle, isDone)
-	if errors.Is(err, models.ErrTaskAlreadyExist) {
-		newFormData := h.pageCreator.NewFormData()
-		newFormData.Values["Title"] = taskTitle
-		newFormData.Errors["Title"] = "Task already exist"
+		log.Info("DELETE /task/:id", "id", taskID)
 
-		return ctx.Render(OkResponse, "create-task-form", newFormData)
+		err = taskStorage.RemoveTask(taskID)
+		if err != nil {
+			log.Error("Task not found", "err", err)
+
+			return ctx.String(NotFoundError, "Task is not found")
+		}
+
+		return ctx.NoContent(OkResponse)
 	}
+}
 
-	if err != nil {
-		h.log.Error("Failed to create a task", "err", err)
+func CreateTaskHandler(
+	taskStorage TaskStorage,
+	log *slog.Logger,
+) echo.HandlerFunc {
+	return func(ctx echo.Context) error {
+		taskTitle := ctx.FormValue("title")
+		isDone := false
 
-		return ctx.String(InternalServerError, "Failed to create a task")
+		task, err := taskStorage.NewTask(taskTitle, isDone)
+		if errors.Is(err, models.ErrTaskAlreadyExist) {
+			newFormData := models.NewFormData()
+			newFormData.Values["Title"] = taskTitle
+			newFormData.Errors["Title"] = "Task already exist"
+
+			return ctx.Render(OkResponse, "create-task-form", newFormData)
+		}
+
+		if err != nil {
+			log.Error("Failed to create a task", "err", err)
+
+			return ctx.String(InternalServerError, "Failed to create a task")
+		}
+
+		err = ctx.Render(OkResponse, "create-task-form", models.NewFormData())
+		if err != nil {
+			log.Error("Failed to create a form", "err", err)
+
+			return ctx.String(InternalServerError, "Failed to create a task")
+		}
+
+		log.Info("POST /tasks")
+
+		return ctx.Render(OkResponse, "oob-task", task)
 	}
-
-	err = ctx.Render(OkResponse, "create-task-form", h.pageCreator.NewFormData())
-	if err != nil {
-		h.log.Error("Failed to create a form", "err", err)
-
-		return ctx.String(InternalServerError, "Failed to create a task")
-	}
-
-	log.Info("POST /tasks")
-
-	return ctx.Render(OkResponse, "oob-task", task)
 }

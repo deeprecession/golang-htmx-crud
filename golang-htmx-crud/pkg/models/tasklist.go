@@ -16,17 +16,23 @@ type Task struct {
 }
 
 type TaskList struct {
-	Tasks Tasks
-	log   *slog.Logger
-	db    *sql.DB
+	log *slog.Logger
+	db  *sql.DB
 }
 
-func GetTaskList(database *sql.DB, logger *slog.Logger) (TaskList, error) {
+func NewTaskList(database *sql.DB, logger *slog.Logger) TaskList {
+	return TaskList{
+		logger,
+		database,
+	}
+}
+
+func (tl *TaskList) GetTasks() (Tasks, error) {
 	const funcErrMsg = "models.GetTaskList"
 
-	rows, err := database.Query("SELECT * FROM tasks")
+	rows, err := tl.db.Query("SELECT * FROM tasks")
 	if err != nil {
-		return TaskList{}, fmt.Errorf("%s: failed to query tasks table: %w", funcErrMsg, err)
+		return Tasks{}, fmt.Errorf("%s: failed to query tasks table: %w", funcErrMsg, err)
 	}
 
 	defer rows.Close()
@@ -38,23 +44,17 @@ func GetTaskList(database *sql.DB, logger *slog.Logger) (TaskList, error) {
 
 		err := rows.Scan(&task.ID, &task.Title, &task.IsDone)
 		if err != nil {
-			return TaskList{}, fmt.Errorf("%s: failed to scan rows: %w", funcErrMsg, err)
+			return Tasks{}, fmt.Errorf("%s: failed to scan rows: %w", funcErrMsg, err)
 		}
 
 		tasks = append(tasks, task)
 	}
 
 	if err := rows.Err(); err != nil {
-		return TaskList{}, fmt.Errorf("%s: rows error: %w", funcErrMsg, err)
+		return Tasks{}, fmt.Errorf("%s: rows error: %w", funcErrMsg, err)
 	}
 
-	tasklist := TaskList{
-		tasks,
-		logger,
-		database,
-	}
-
-	return tasklist, nil
+	return tasks, nil
 }
 
 func (tl *TaskList) NewTask(title string, isDone bool) (Task, error) {

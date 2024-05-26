@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"net"
 	"os"
 )
 
@@ -71,11 +72,10 @@ func GetPsqlInfoFromEnv() (string, error) {
 	}
 
 	psqlInfo := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		"postgres://%s:%s@%s/%s?sslmode=disable",
 		username,
 		pswd,
-		host,
-		port,
+		net.JoinHostPort(host, port),
 		dbname,
 	)
 

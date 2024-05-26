@@ -60,7 +60,7 @@
 
 {{ block "display" . }}
     <div id="tasks" style="display: flex; flex-direction: column;">
-            {{ range .Tasks }}
+            {{ range . }}
                 {{ template "task" . }}
             {{ end }}
     </div>

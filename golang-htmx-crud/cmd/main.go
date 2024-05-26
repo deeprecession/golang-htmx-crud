@@ -35,7 +35,7 @@ func main() {
 	httpServer.Renderer = newTemplate()
 
 	slogHandlerOptions := slog.HandlerOptions{
-		Level: slog.Level(slog.LevelDebug),
+		Level: slog.LevelDebug,
 	}
 	stdoutTextHandler := slog.NewTextHandler(os.Stdout, &slogHandlerOptions)
 	log := slog.New(stdoutTextHandler)
@@ -54,7 +54,8 @@ func main() {
 	for err != nil {
 		log.Error("failed to connect to a database:", "psqlInfo", psqlInfo, "err", err)
 
-		time.Sleep(time.Second * 5)
+		reconnectSecondsTime := 5
+		time.Sleep(time.Duration(reconnectSecondsTime) * time.Second)
 
 		dbConnection, err = db.CreatePostgresDatabase(psqlInfo)
 	}
@@ -65,40 +66,23 @@ func main() {
 		}
 	}()
 
-	tasklist, err := models.GetTaskList(dbConnection, log)
-	if err != nil {
-		log.Error("failed to get tasklist:", "err", err)
-
-		return
-	}
+	tasksStorage := models.NewTaskList(dbConnection, log)
 
 	userStorage := models.GetUserStorage(log, dbConnection)
 
-	page := models.NewPage(tasklist)
-	baseTaskHandler := handlers.NewBaseTaskHandler(&tasklist, &page, &userStorage, log)
-
-	httpServer.GET("/", func(ctx echo.Context) error {
-		tasklist, err := models.GetTaskList(dbConnection, log)
-		if err != nil {
-			log.Error("failed to get tasklist:", "err", err)
-		}
-
-		page := models.NewPage(tasklist)
-
-		return ctx.Render(handlers.OkResponse, "index", page)
-	})
-	httpServer.PUT("/task/:id", baseTaskHandler.ToggleDoneStatusTaskHandler)
-	httpServer.DELETE("/task/:id", baseTaskHandler.RemoveTaskHandler)
-	httpServer.POST("/tasks", baseTaskHandler.CreateTaskHandler)
+	httpServer.GET("/", handlers.BaseHandler(&tasksStorage, log))
+	httpServer.PUT("/task/:id", handlers.ToggleDoneStatusTaskHandler(&tasksStorage, log))
+	httpServer.DELETE("/task/:id", handlers.RemoveTaskHandler(&tasksStorage, log))
+	httpServer.POST("/tasks", handlers.CreateTaskHandler(&tasksStorage, log))
 
 	httpServer.Use(echoprometheus.NewMiddleware("myapp"))
 	httpServer.GET("/metrics", echoprometheus.NewHandler())
 
-	httpServer.GET("/register", baseTaskHandler.RegisterPageHandler)
-	httpServer.POST("/register", baseTaskHandler.RegisterUserHandler)
+	httpServer.GET("/register", handlers.RegisterPageHandler(log))
+	httpServer.POST("/register", handlers.RegisterUserHandler(&userStorage, log))
 
-	httpServer.GET("/login", baseTaskHandler.LoginPageHandler)
-	httpServer.POST("/login", baseTaskHandler.LoginUserHandler)
+	httpServer.GET("/login", handlers.LoginPageHandler(log))
+	httpServer.POST("/login", handlers.LoginUserHandler(&userStorage, log))
 
 	appPort := os.Getenv("APP_PORT")
 

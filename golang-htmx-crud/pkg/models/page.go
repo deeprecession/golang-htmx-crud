@@ -1,7 +1,7 @@
 package models
 
 type Page struct {
-	Data TaskList
+	Data Tasks
 	Form FormData
 }
 
@@ -21,7 +21,7 @@ func NewFormData() FormData {
 	}
 }
 
-func NewPage(tasklist TaskList) Page {
+func NewPage(tasklist Tasks) Page {
 	return Page{
 		Data: tasklist,
 		Form: NewFormData(),

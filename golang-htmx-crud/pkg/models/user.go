@@ -55,7 +55,7 @@ func (storage *UserStorage) Register(login, password string) error {
 	return nil
 }
 
-func (storage UserStorage) Login(login, password string) error {
+func (storage *UserStorage) Login(login, password string) error {
 	const funcErrMsg = "storage.UserStorage.GetUserWithLogin"
 
 	storedUser, err := storage.GetUserWithLogin(login)
@@ -70,7 +70,7 @@ func (storage UserStorage) Login(login, password string) error {
 	return nil
 }
 
-func (storage UserStorage) GetUserWithLogin(login string) (User, error) {
+func (storage *UserStorage) GetUserWithLogin(login string) (User, error) {
 	const funcErrMsg = "storage.UserStorage.GetUserWithLogin"
 
 	const query = `SELECT login, password FROM users WHERE login = $1`
@@ -80,7 +80,14 @@ func (storage UserStorage) GetUserWithLogin(login string) (User, error) {
 		return User{}, fmt.Errorf("%s failed to prepare a statement: %w", funcErrMsg, err)
 	}
 
+	defer stmt.Close()
+
 	rows, err := stmt.Query(login)
+	if err != nil {
+		return User{}, fmt.Errorf("%s failed to query a statement: %w", funcErrMsg, err)
+	}
+
+	defer rows.Close()
 
 	isUserNotExist := !rows.Next()
 
@@ -112,6 +119,8 @@ func (storage *UserStorage) addUser(user User) error {
 		return fmt.Errorf("%s failed to prepare a statement: %w", funcErrMsg, err)
 	}
 
+	defer stmt.Close()
+
 	_, err = stmt.Exec(user.login, user.password)
 	if err != nil {
 		return fmt.Errorf("%s failed to execute a statement: %w", funcErrMsg, err)
@@ -130,7 +139,14 @@ func (storage UserStorage) loginIsTaken(login string) (bool, error) {
 		return false, fmt.Errorf("%s failed to prepare a statement: %w", funcErrMsg, err)
 	}
 
+	defer stmt.Close()
+
 	rows, err := stmt.Query(login)
+	if err != nil {
+		return false, fmt.Errorf("%s failed to query a statement: %w", funcErrMsg, err)
+	}
+
+	defer rows.Close()
 
 	isUserAlreadyExist := rows.Next()
 

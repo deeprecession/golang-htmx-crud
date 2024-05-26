@@ -3,38 +3,31 @@ package handlers
 import (
 	"log/slog"
 
+	"github.com/labstack/echo/v4"
+
 	"github.com/deeprecession/golang-htmx-crud/pkg/models"
 )
 
-type TaskStorage interface {
-	SetDoneStatus(id int, isDone bool) error
-	RemoveTask(id int) error
-	NewTask(taskTitle string, isDone bool) (models.Task, error)
-	HasTask(taskTitle string) (bool, error)
-	GetTaskByID(taskID int) (models.Task, error)
-}
+const (
+	BadRequestError     = 400
+	NotFoundError       = 404
+	OkResponse          = 200
+	InternalServerError = 500
+)
 
 type PageCreator interface {
 	NewFormData() models.FormData
 }
 
-type UserStorage interface {
-	Register(login string, password string) error
-	Login(login string, password string) error
-}
+func BaseHandler(tasklist TaskStorage, log *slog.Logger) echo.HandlerFunc {
+	return func(ctx echo.Context) error {
+		tasklist, err := tasklist.GetTasks()
+		if err != nil {
+			log.Error("failed to get tasks:", "err", err)
+		}
 
-type BaseHandler struct {
-	taskStorage TaskStorage
-	userStorage UserStorage
-	pageCreator PageCreator
-	log         *slog.Logger
-}
+		page := models.NewPage(tasklist)
 
-func NewBaseTaskHandler(
-	taskStorage TaskStorage,
-	pageCreator PageCreator,
-	userStorage UserStorage,
-	logger *slog.Logger,
-) BaseHandler {
-	return BaseHandler{taskStorage, userStorage, pageCreator, logger}
+		return ctx.Render(OkResponse, "index", page)
+	}
 }
