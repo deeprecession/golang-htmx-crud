@@ -70,6 +70,12 @@ func RegisterPageHandler(log *slog.Logger) echo.HandlerFunc {
 	}
 }
 
+type RegisterResponse struct {
+	LoginValue    string
+	PasswordValue string
+	Error         string
+}
+
 func RegisterUserHandler(userStorage UserStorage, log *slog.Logger) echo.HandlerFunc {
 	return func(ctx echo.Context) error {
 		login := ctx.FormValue("login")
@@ -79,9 +85,15 @@ func RegisterUserHandler(userStorage UserStorage, log *slog.Logger) echo.Handler
 
 		err := userStorage.Register(login, password)
 		if err != nil {
-			return ctx.String(http.StatusBadRequest, "failed to register: "+err.Error())
+			registerResponse := RegisterResponse{
+				login,
+				password,
+				err.Error(),
+			}
+
+			return ctx.Render(http.StatusOK, "register", registerResponse)
 		}
 
-		return ctx.String(http.StatusOK, "registered!")
+		return ctx.Redirect(http.StatusFound, "/")
 	}
 }

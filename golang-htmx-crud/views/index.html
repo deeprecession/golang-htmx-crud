@@ -103,13 +103,19 @@
         <form action="/register" method="POST">
             <div id="register-form-login" style="display: flex;">
                 <label>login</label>
-                <input type="text" name="login">
+                <input type="text" name="login" value="{{ .LoginValue }}">
             </div>
 
             <div id="register-form-password" style="display: flex;">
                 <label>password</label>
-                <input type="password" name="password">
+                <input type="password" name="password" value="{{ .PasswordValue }}">
             </div>
+
+            {{ if .Error }}
+                <div style="color: red;">
+                    {{ .Error }}
+                <div>
+            {{ end }}
 
             <div style="display: flex;">
                 <button>register</button>
