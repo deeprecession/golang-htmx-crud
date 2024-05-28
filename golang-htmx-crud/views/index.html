@@ -133,13 +133,19 @@
         <form action="/login" method="POST">
             <div id="login-form-login" style="display: flex;">
                 <label>login</label>
-                <input type="text" name="login">
+                <input type="text" name="login" value="{{ .LoginValue }}">
             </div>
 
             <div id="login-form-password" style="display: flex;">
                 <label>password</label>
-                <input type="password" name="password">
+                <input type="password" name="password" value="{{ .PasswordValue }}">
             </div>
+
+            {{ if .Error }}
+                <div style="color: red;">
+                    {{ .Error }}
+                <div>
+            {{ end }}
 
             <div style="display: flex;">
                 <button>login</button>

@@ -59,12 +59,15 @@ func (storage *UserStorage) Login(login, password string) error {
 	const funcErrMsg = "storage.UserStorage.Login"
 
 	storedUser, err := storage.GetUserWithLogin(login)
+	if errors.Is(err, ErrUserNotFound) {
+		return ErrUserNotFound
+	}
 	if err != nil {
-		return fmt.Errorf("%s failed to login: %w", funcErrMsg, err)
+		return fmt.Errorf("failed to login: %w", err)
 	}
 
 	if storedUser.password != password {
-		return fmt.Errorf("%s failed to login: %w", funcErrMsg, ErrBadPassword)
+		return ErrBadPassword
 	}
 
 	return nil

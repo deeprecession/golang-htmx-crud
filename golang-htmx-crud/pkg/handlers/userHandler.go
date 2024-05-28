@@ -40,6 +40,12 @@ func LoginPageHandler(log *slog.Logger) echo.HandlerFunc {
 	}
 }
 
+type LoginFormResponse struct {
+	LoginValue    string
+	PasswordValue string
+	Error         string
+}
+
 func LoginUserHandler(
 	sessionStorage SessionStore,
 	userStorage UserStorage,
@@ -53,7 +59,13 @@ func LoginUserHandler(
 
 		err := userStorage.Login(login, password)
 		if err != nil {
-			return ctx.String(http.StatusBadRequest, "failed to login: "+err.Error())
+			loginResponse := LoginFormResponse{
+				LoginValue:    login,
+				PasswordValue: password,
+				Error:         err.Error(),
+			}
+
+			return ctx.Render(http.StatusOK, "login", loginResponse)
 		}
 
 		sessionStorage.SetSession(&ctx.Response().Writer, "session", login)
@@ -70,7 +82,7 @@ func RegisterPageHandler(log *slog.Logger) echo.HandlerFunc {
 	}
 }
 
-type RegisterResponse struct {
+type RegisterFormResponse struct {
 	LoginValue    string
 	PasswordValue string
 	Error         string
@@ -85,7 +97,7 @@ func RegisterUserHandler(userStorage UserStorage, log *slog.Logger) echo.Handler
 
 		err := userStorage.Register(login, password)
 		if err != nil {
-			registerResponse := RegisterResponse{
+			registerResponse := RegisterFormResponse{
 				login,
 				password,
 				err.Error(),
