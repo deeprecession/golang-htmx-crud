@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"log/slog"
+	"net/http"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
@@ -25,7 +26,7 @@ func ToggleDoneStatusTaskHandler(taskStorage TaskStorage, log *slog.Logger) echo
 		if err != nil {
 			log.Error("Invalid id", "err", err)
 
-			return ctx.String(BadRequestError, "Invalid id")
+			return ctx.String(http.StatusBadRequest, "Invalid id")
 		}
 
 		log.Info("PUT /task/:id", "id", taskID)
@@ -34,7 +35,7 @@ func ToggleDoneStatusTaskHandler(taskStorage TaskStorage, log *slog.Logger) echo
 		if err != nil {
 			log.Error("Task not found", "err", err)
 
-			return ctx.String(NotFoundError, "Task is not found")
+			return ctx.String(http.StatusNotFound, "Task is not found")
 		}
 
 		newDoneStatus := !task.IsDone
@@ -43,17 +44,17 @@ func ToggleDoneStatusTaskHandler(taskStorage TaskStorage, log *slog.Logger) echo
 		if err != nil {
 			log.Error("Task not found", "err", err)
 
-			return ctx.String(NotFoundError, "Task is not found")
+			return ctx.String(http.StatusNotFound, "Task is not found")
 		}
 
 		updatedTask, err := taskStorage.GetTaskByID(taskID)
 		if err != nil {
 			log.Error("failed to get a task", "err", err)
 
-			return ctx.String(NotFoundError, "Task is not found")
+			return ctx.String(http.StatusNotFound, "Task is not found")
 		}
 
-		return ctx.Render(OkResponse, "task", updatedTask)
+		return ctx.Render(http.StatusOK, "task", updatedTask)
 	}
 }
 
@@ -63,7 +64,7 @@ func RemoveTaskHandler(taskStorage TaskStorage, log *slog.Logger) echo.HandlerFu
 		if err != nil {
 			log.Error("Invalid id", "err", err)
 
-			return ctx.String(BadRequestError, "Invalid id")
+			return ctx.String(http.StatusBadRequest, "Invalid id")
 		}
 
 		log.Info("DELETE /task/:id", "id", taskID)
@@ -72,10 +73,10 @@ func RemoveTaskHandler(taskStorage TaskStorage, log *slog.Logger) echo.HandlerFu
 		if err != nil {
 			log.Error("Task not found", "err", err)
 
-			return ctx.String(NotFoundError, "Task is not found")
+			return ctx.String(http.StatusNotFound, "Task is not found")
 		}
 
-		return ctx.NoContent(OkResponse)
+		return ctx.NoContent(http.StatusOK)
 	}
 }
 
@@ -93,24 +94,24 @@ func CreateTaskHandler(
 			newFormData.Values["Title"] = taskTitle
 			newFormData.Errors["Title"] = "Task already exist"
 
-			return ctx.Render(OkResponse, "create-task-form", newFormData)
+			return ctx.Render(http.StatusOK, "create-task-form", newFormData)
 		}
 
 		if err != nil {
 			log.Error("Failed to create a task", "err", err)
 
-			return ctx.String(InternalServerError, "Failed to create a task")
+			return ctx.String(http.StatusInternalServerError, "Failed to create a task")
 		}
 
-		err = ctx.Render(OkResponse, "create-task-form", models.NewFormData())
+		err = ctx.Render(http.StatusOK, "create-task-form", models.NewFormData())
 		if err != nil {
 			log.Error("Failed to create a form", "err", err)
 
-			return ctx.String(InternalServerError, "Failed to create a task")
+			return ctx.String(http.StatusInternalServerError, "Failed to create a task")
 		}
 
 		log.Info("POST /tasks")
 
-		return ctx.Render(OkResponse, "oob-task", task)
+		return ctx.Render(http.StatusOK, "oob-task", task)
 	}
 }

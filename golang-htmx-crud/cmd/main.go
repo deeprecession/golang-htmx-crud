@@ -31,8 +31,8 @@ func (t *Templates) Render(w io.Writer, name string, data interface{}, _ echo.Co
 }
 
 func main() {
-	httpServer := echo.New()
-	httpServer.Renderer = newTemplate()
+	server := echo.New()
+	server.Renderer = newTemplate()
 
 	slogHandlerOptions := slog.HandlerOptions{
 		Level: slog.LevelDebug,
@@ -40,7 +40,7 @@ func main() {
 	stdoutTextHandler := slog.NewTextHandler(os.Stdout, &slogHandlerOptions)
 	log := slog.New(stdoutTextHandler)
 
-	httpServer.Use(handlers.NewLoggerMiddleware(log))
+	server.Use(handlers.NewLoggerMiddleware(log))
 
 	psqlInfo, err := db.GetPsqlInfoFromEnv()
 	if err != nil {
@@ -67,24 +67,29 @@ func main() {
 	}()
 
 	tasksStorage := models.NewTaskList(dbConnection, log)
-
 	userStorage := models.GetUserStorage(log, dbConnection)
+	sessionStorage := models.NewSessionStore()
 
-	httpServer.GET("/", handlers.BaseHandler(&tasksStorage, log))
-	httpServer.PUT("/task/:id", handlers.ToggleDoneStatusTaskHandler(&tasksStorage, log))
-	httpServer.DELETE("/task/:id", handlers.RemoveTaskHandler(&tasksStorage, log))
-	httpServer.POST("/tasks", handlers.CreateTaskHandler(&tasksStorage, log))
+	baseGroup := server.Group("")
 
-	httpServer.Use(echoprometheus.NewMiddleware("myapp"))
-	httpServer.GET("/metrics", echoprometheus.NewHandler())
+	baseGroup.Use(echoprometheus.NewMiddleware("myapp"))
+	baseGroup.GET("/metrics", echoprometheus.NewHandler())
 
-	httpServer.GET("/register", handlers.RegisterPageHandler(log))
-	httpServer.POST("/register", handlers.RegisterUserHandler(&userStorage, log))
+	authRequiredBaseGroup := baseGroup.Group("")
+	authRequiredBaseGroup.Use(handlers.AuthorizationCheckMiddleware(&sessionStorage, log))
 
-	httpServer.GET("/login", handlers.LoginPageHandler(log))
-	httpServer.POST("/login", handlers.LoginUserHandler(&userStorage, log))
+	authRequiredBaseGroup.GET("/", handlers.BaseHandler(&tasksStorage, log))
+	authRequiredBaseGroup.PUT("/task/:id", handlers.ToggleDoneStatusTaskHandler(&tasksStorage, log))
+	authRequiredBaseGroup.DELETE("/task/:id", handlers.RemoveTaskHandler(&tasksStorage, log))
+	authRequiredBaseGroup.POST("/tasks", handlers.CreateTaskHandler(&tasksStorage, log))
+
+	baseGroup.GET("/register", handlers.RegisterPageHandler(log))
+	baseGroup.POST("/register", handlers.RegisterUserHandler(&userStorage, log))
+
+	baseGroup.GET("/login", handlers.LoginPageHandler(log))
+	baseGroup.POST("/login", handlers.LoginUserHandler(&sessionStorage, &userStorage, log))
 
 	appPort := os.Getenv("APP_PORT")
 
-	httpServer.Logger.Fatal(httpServer.Start(":" + appPort))
+	server.Logger.Fatal(server.Start(":" + appPort))
 }

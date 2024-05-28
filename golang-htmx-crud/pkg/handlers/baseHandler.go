@@ -2,17 +2,11 @@ package handlers
 
 import (
 	"log/slog"
+	"net/http"
 
 	"github.com/labstack/echo/v4"
 
 	"github.com/deeprecession/golang-htmx-crud/pkg/models"
-)
-
-const (
-	BadRequestError     = 400
-	NotFoundError       = 404
-	OkResponse          = 200
-	InternalServerError = 500
 )
 
 type PageCreator interface {
@@ -28,6 +22,6 @@ func BaseHandler(tasklist TaskStorage, log *slog.Logger) echo.HandlerFunc {
 
 		page := models.NewPage(tasklist)
 
-		return ctx.Render(OkResponse, "index", page)
+		return ctx.Render(http.StatusOK, "index", page)
 	}
 }
