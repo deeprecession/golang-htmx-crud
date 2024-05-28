@@ -56,7 +56,7 @@ func (storage *UserStorage) Register(login, password string) error {
 }
 
 func (storage *UserStorage) Login(login, password string) error {
-	const funcErrMsg = "storage.UserStorage.GetUserWithLogin"
+	const funcErrMsg = "storage.UserStorage.Login"
 
 	storedUser, err := storage.GetUserWithLogin(login)
 	if err != nil {
