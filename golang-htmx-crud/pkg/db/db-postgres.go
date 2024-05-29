@@ -23,16 +23,26 @@ func CreatePostgresDatabase(psqlInfo string) (*sql.DB, error) {
 
 func initPostgresScheme(postgresDB *sql.DB) error {
 	const initQuery = `
-CREATE TABLE IF NOT EXISTS tasks (
+CREATE TABLE IF NOT EXISTS task (
     id SERIAL PRIMARY KEY NOT NULL,
     title TEXT UNIQUE NOT NULL,
     is_done BOOLEAN NOT NULL DEFAULT FALSE
 );
 
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE IF NOT EXISTS "user" (
     id SERIAL PRIMARY KEY NOT NULL,
     login TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS user_task (
+    user_id INT NOT NULL,
+    task_id INT NOT NULL,
+
+    FOREIGN KEY (user_id) REFERENCES "user"(id),
+    FOREIGN KEY (task_id) REFERENCES task(id),
+
+    PRIMARY KEY (user_id, task_id)
 );`
 
 	_, err := postgresDB.Exec(initQuery)
