@@ -15,19 +15,19 @@ type Task struct {
 	IsDone bool
 }
 
-type TaskList struct {
+type TaskStorage struct {
 	log *slog.Logger
 	db  *sql.DB
 }
 
-func NewTaskList(database *sql.DB, logger *slog.Logger) TaskList {
-	return TaskList{
+func NewTaskStorage(database *sql.DB, logger *slog.Logger) TaskStorage {
+	return TaskStorage{
 		logger,
 		database,
 	}
 }
 
-func (tl *TaskList) GetTasks() (Tasks, error) {
+func (tl *TaskStorage) GetTasks() (Tasks, error) {
 	const funcErrMsg = "models.GetTaskList"
 
 	rows, err := tl.db.Query("SELECT * FROM tasks")
@@ -57,7 +57,7 @@ func (tl *TaskList) GetTasks() (Tasks, error) {
 	return tasks, nil
 }
 
-func (tl *TaskList) NewTask(title string, isDone bool) (Task, error) {
+func (tl *TaskStorage) NewTask(title string, isDone bool) (Task, error) {
 	const funcErrMsg = "models.NewTask"
 
 	isTaskExist, err := tl.HasTask(title)
@@ -91,7 +91,7 @@ func (tl *TaskList) NewTask(title string, isDone bool) (Task, error) {
 	return task, nil
 }
 
-func (tl *TaskList) HasTask(title string) (bool, error) {
+func (tl *TaskStorage) HasTask(title string) (bool, error) {
 	const funcErrMsg = "models.HasTask"
 
 	stmt, err := tl.db.Prepare("SELECT * FROM tasks WHERE title = $1")
@@ -117,7 +117,7 @@ func (tl *TaskList) HasTask(title string) (bool, error) {
 	return hasTask, nil
 }
 
-func (tl *TaskList) RemoveTask(taskID int) error {
+func (tl *TaskStorage) RemoveTask(taskID int) error {
 	const funcErrMsg = "models.RemoveTask"
 
 	stmt, err := tl.db.Prepare("DELETE FROM tasks WHERE id = $1")
@@ -135,7 +135,7 @@ func (tl *TaskList) RemoveTask(taskID int) error {
 	return nil
 }
 
-func (tl *TaskList) GetTaskByID(taskID int) (Task, error) {
+func (tl *TaskStorage) GetTaskByID(taskID int) (Task, error) {
 	const funcErrMsg = "models.GetTask"
 
 	stmt, err := tl.db.Prepare("SELECT * FROM tasks WHERE id = $1")
@@ -151,7 +151,7 @@ func (tl *TaskList) GetTaskByID(taskID int) (Task, error) {
 	return task, nil
 }
 
-func (tl *TaskList) GetTaskByTitle(title string) (Task, error) {
+func (tl *TaskStorage) GetTaskByTitle(title string) (Task, error) {
 	const funcErrMsg = "models.GetTaskByTitle"
 
 	stmt, err := tl.db.Prepare("SELECT * FROM tasks WHERE title = $1")
@@ -167,7 +167,7 @@ func (tl *TaskList) GetTaskByTitle(title string) (Task, error) {
 	return task, nil
 }
 
-func (tl *TaskList) GetTask(stmt *sql.Stmt, title string) (Task, error) {
+func (tl *TaskStorage) GetTask(stmt *sql.Stmt, title string) (Task, error) {
 	const funcErrMsg = "models.GetTask"
 
 	result, err := stmt.Query(title)
@@ -196,7 +196,7 @@ func (tl *TaskList) GetTask(stmt *sql.Stmt, title string) (Task, error) {
 	return task, nil
 }
 
-func (tl *TaskList) SetDoneStatus(taskID int, isDone bool) error {
+func (tl *TaskStorage) SetDoneStatus(taskID int, isDone bool) error {
 	const funcErrMsg = "models.ToggleDoneStatus"
 
 	stmt, err := tl.db.Prepare("UPDATE tasks SET is_done = $1 WHERE id = $2")
