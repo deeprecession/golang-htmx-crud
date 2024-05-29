@@ -7,7 +7,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type UserStorage interface {
+type UserAuth interface {
 	Register(login string, password string) error
 	Login(login string, password string) error
 }
@@ -48,7 +48,7 @@ type LoginFormResponse struct {
 
 func LoginUserHandler(
 	sessionStorage SessionStore,
-	userStorage UserStorage,
+	userStorage UserAuth,
 	log *slog.Logger,
 ) echo.HandlerFunc {
 	return func(ctx echo.Context) error {
@@ -88,7 +88,7 @@ type RegisterFormResponse struct {
 	Error         string
 }
 
-func RegisterUserHandler(userStorage UserStorage, log *slog.Logger) echo.HandlerFunc {
+func RegisterUserHandler(userStorage UserAuth, log *slog.Logger) echo.HandlerFunc {
 	return func(ctx echo.Context) error {
 		login := ctx.FormValue("login")
 		password := ctx.FormValue("password")

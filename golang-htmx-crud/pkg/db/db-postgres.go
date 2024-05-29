@@ -25,7 +25,7 @@ func initPostgresScheme(postgresDB *sql.DB) error {
 	const initQuery = `
 CREATE TABLE IF NOT EXISTS task (
     id SERIAL PRIMARY KEY NOT NULL,
-    title TEXT UNIQUE NOT NULL,
+    title TEXT NOT NULL,
     is_done BOOLEAN NOT NULL DEFAULT FALSE
 );
 
@@ -39,8 +39,8 @@ CREATE TABLE IF NOT EXISTS user_task (
     user_id INT NOT NULL,
     task_id INT NOT NULL,
 
-    FOREIGN KEY (user_id) REFERENCES "user"(id),
-    FOREIGN KEY (task_id) REFERENCES task(id),
+    FOREIGN KEY (user_id) REFERENCES "user"(id) ON DELETE CASCADE,
+    FOREIGN KEY (task_id) REFERENCES task(id) ON DELETE CASCADE,
 
     PRIMARY KEY (user_id, task_id)
 );`

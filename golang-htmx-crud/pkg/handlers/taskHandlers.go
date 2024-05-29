@@ -11,17 +11,30 @@ import (
 	"github.com/deeprecession/golang-htmx-crud/pkg/models"
 )
 
-type TaskStorage interface {
-	SetDoneStatus(id int, isDone bool) error
-	GetTasks() (models.Tasks, error)
-	RemoveTask(id int) error
-	NewTask(taskTitle string, isDone bool) (models.Task, error)
-	HasTask(taskTitle string) (bool, error)
-	GetTaskByID(taskID int) (models.Task, error)
+type UserStorage interface {
+	GetUserWithLogin(login string) (models.User, error)
 }
 
-func ToggleDoneStatusTaskHandler(taskStorage TaskStorage, log *slog.Logger) echo.HandlerFunc {
+func ToggleDoneStatusTaskHandler(
+	sessionStore SessionStore,
+	userStorage UserStorage,
+	log *slog.Logger,
+) echo.HandlerFunc {
 	return func(ctx echo.Context) error {
+		login, err := sessionStore.GetSession(ctx.Request(), "session")
+		if err != nil {
+			log.Info("Not authorized! Redirecting...", "err", err)
+
+			return ctx.Redirect(http.StatusFound, "/login")
+		}
+
+		user, err := userStorage.GetUserWithLogin(login)
+		if err != nil {
+			log.Error("failed to get a user with login", "err", err)
+
+			return ctx.String(http.StatusInternalServerError, "Invalid id")
+		}
+
 		taskID, err := strconv.Atoi(ctx.Param("id"))
 		if err != nil {
 			log.Error("Invalid id", "err", err)
@@ -31,7 +44,7 @@ func ToggleDoneStatusTaskHandler(taskStorage TaskStorage, log *slog.Logger) echo
 
 		log.Info("PUT /task/:id", "id", taskID)
 
-		task, err := taskStorage.GetTaskByID(taskID)
+		task, err := user.GetTaskByID(taskID)
 		if err != nil {
 			log.Error("Task not found", "err", err)
 
@@ -40,14 +53,14 @@ func ToggleDoneStatusTaskHandler(taskStorage TaskStorage, log *slog.Logger) echo
 
 		newDoneStatus := !task.IsDone
 
-		err = taskStorage.SetDoneStatus(taskID, newDoneStatus)
+		err = user.SetDoneStatus(taskID, newDoneStatus)
 		if err != nil {
 			log.Error("Task not found", "err", err)
 
 			return ctx.String(http.StatusNotFound, "Task is not found")
 		}
 
-		updatedTask, err := taskStorage.GetTaskByID(taskID)
+		updatedTask, err := user.GetTaskByID(taskID)
 		if err != nil {
 			log.Error("failed to get a task", "err", err)
 
@@ -58,8 +71,26 @@ func ToggleDoneStatusTaskHandler(taskStorage TaskStorage, log *slog.Logger) echo
 	}
 }
 
-func RemoveTaskHandler(taskStorage TaskStorage, log *slog.Logger) echo.HandlerFunc {
+func RemoveTaskHandler(
+	sessionStore SessionStore,
+	userStorage UserStorage,
+	log *slog.Logger,
+) echo.HandlerFunc {
 	return func(ctx echo.Context) error {
+		login, err := sessionStore.GetSession(ctx.Request(), "session")
+		if err != nil {
+			log.Info("Not authorized! Redirecting...", "err", err)
+
+			return ctx.Redirect(http.StatusFound, "/login")
+		}
+
+		user, err := userStorage.GetUserWithLogin(login)
+		if err != nil {
+			log.Error("failed to get a user with login", "err", err)
+
+			return ctx.String(http.StatusInternalServerError, "Invalid id")
+		}
+
 		taskID, err := strconv.Atoi(ctx.Param("id"))
 		if err != nil {
 			log.Error("Invalid id", "err", err)
@@ -69,7 +100,7 @@ func RemoveTaskHandler(taskStorage TaskStorage, log *slog.Logger) echo.HandlerFu
 
 		log.Info("DELETE /task/:id", "id", taskID)
 
-		err = taskStorage.RemoveTask(taskID)
+		err = user.RemoveTask(taskID)
 		if err != nil {
 			log.Error("Task not found", "err", err)
 
@@ -81,14 +112,29 @@ func RemoveTaskHandler(taskStorage TaskStorage, log *slog.Logger) echo.HandlerFu
 }
 
 func CreateTaskHandler(
-	taskStorage TaskStorage,
+	sessionStore SessionStore,
+	userStorage UserStorage,
 	log *slog.Logger,
 ) echo.HandlerFunc {
 	return func(ctx echo.Context) error {
+		login, err := sessionStore.GetSession(ctx.Request(), "session")
+		if err != nil {
+			log.Info("Not authorized! Redirecting...", "err", err)
+
+			return ctx.Redirect(http.StatusFound, "/login")
+		}
+
+		user, err := userStorage.GetUserWithLogin(login)
+		if err != nil {
+			log.Error("failed to get a user with login", "err", err)
+
+			return ctx.String(http.StatusInternalServerError, "Invalid id")
+		}
+
 		taskTitle := ctx.FormValue("title")
 		isDone := false
 
-		task, err := taskStorage.NewTask(taskTitle, isDone)
+		task, err := user.NewTask(taskTitle, isDone)
 		if errors.Is(err, models.ErrTaskAlreadyExist) {
 			newFormData := models.NewFormData()
 			newFormData.Values["Title"] = taskTitle

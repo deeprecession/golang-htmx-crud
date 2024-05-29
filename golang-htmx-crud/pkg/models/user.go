@@ -13,11 +13,6 @@ var (
 	ErrBadPassword      = errors.New("bad password")
 )
 
-type User struct {
-	login    string
-	password string
-}
-
 type UserStorage struct {
 	log      *slog.Logger
 	database *sql.DB
@@ -43,14 +38,12 @@ func (storage *UserStorage) Register(login, password string) error {
 		return fmt.Errorf("%w", ErrUserAlreadyExist)
 	}
 
-	user := User{login, password}
-
-	err = storage.addUser(user)
+	err = storage.addUser(login, password)
 	if err != nil {
 		return fmt.Errorf("%s failed to add a user: %w", funcErrMsg, err)
 	}
 
-	storage.log.Info("inseted a new user", "user", user)
+	storage.log.Info("inseted a new user", "login", login)
 
 	return nil
 }
@@ -76,7 +69,7 @@ func (storage *UserStorage) Login(login, password string) error {
 func (storage *UserStorage) GetUserWithLogin(login string) (User, error) {
 	const funcErrMsg = "storage.UserStorage.GetUserWithLogin"
 
-	const query = `SELECT login, password FROM users WHERE login = $1`
+	const query = `SELECT id, login, password FROM "user" WHERE login = $1`
 
 	stmt, err := storage.database.Prepare(query)
 	if err != nil {
@@ -102,9 +95,9 @@ func (storage *UserStorage) GetUserWithLogin(login string) (User, error) {
 		return User{}, fmt.Errorf("%w", ErrUserNotFound)
 	}
 
-	user := User{}
+	user := User{db: storage.database, log: storage.log}
 
-	err = rows.Scan(&user.login, &user.password)
+	err = rows.Scan(&user.id, &user.login, &user.password)
 	if err != nil {
 		return User{}, fmt.Errorf("%s failed to scan a user: %w", funcErrMsg, err)
 	}
@@ -112,10 +105,10 @@ func (storage *UserStorage) GetUserWithLogin(login string) (User, error) {
 	return user, nil
 }
 
-func (storage *UserStorage) addUser(user User) error {
+func (storage *UserStorage) addUser(login, password string) error {
 	const funcErrMsg = "storage.UserStorage.addUser"
 
-	const query = `INSERT INTO users(login, password) VALUES ($1, $2);`
+	const query = `INSERT INTO "user"(login, password) VALUES ($1, $2);`
 
 	stmt, err := storage.database.Prepare(query)
 	if err != nil {
@@ -124,7 +117,7 @@ func (storage *UserStorage) addUser(user User) error {
 
 	defer stmt.Close()
 
-	_, err = stmt.Exec(user.login, user.password)
+	_, err = stmt.Exec(login, password)
 	if err != nil {
 		return fmt.Errorf("%s failed to execute a statement: %w", funcErrMsg, err)
 	}
@@ -135,7 +128,7 @@ func (storage *UserStorage) addUser(user User) error {
 func (storage UserStorage) loginIsTaken(login string) (bool, error) {
 	const funcErrMsg = "storage.UserStorage.loginIsTaken"
 
-	const query = `SELECT * FROM users WHERE login = $1`
+	const query = `SELECT * FROM "user" WHERE login = $1`
 
 	stmt, err := storage.database.Prepare(query)
 	if err != nil {

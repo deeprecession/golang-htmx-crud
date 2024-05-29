@@ -66,7 +66,6 @@ func main() {
 		}
 	}()
 
-	tasksStorage := models.NewTaskList(dbConnection, log)
 	userStorage := models.GetUserStorage(log, dbConnection)
 	sessionStorage := models.NewSessionStore()
 
@@ -78,10 +77,19 @@ func main() {
 	authRequiredBaseGroup := baseGroup.Group("")
 	authRequiredBaseGroup.Use(handlers.AuthorizationCheckMiddleware(&sessionStorage, log))
 
-	authRequiredBaseGroup.GET("/", handlers.BaseHandler(&tasksStorage, log))
-	authRequiredBaseGroup.PUT("/task/:id", handlers.ToggleDoneStatusTaskHandler(&tasksStorage, log))
-	authRequiredBaseGroup.DELETE("/task/:id", handlers.RemoveTaskHandler(&tasksStorage, log))
-	authRequiredBaseGroup.POST("/tasks", handlers.CreateTaskHandler(&tasksStorage, log))
+	authRequiredBaseGroup.GET("/", handlers.BaseHandler(&sessionStorage, &userStorage, log))
+	authRequiredBaseGroup.PUT(
+		"/task/:id",
+		handlers.ToggleDoneStatusTaskHandler(&sessionStorage, &userStorage, log),
+	)
+	authRequiredBaseGroup.DELETE(
+		"/task/:id",
+		handlers.RemoveTaskHandler(&sessionStorage, &userStorage, log),
+	)
+	authRequiredBaseGroup.POST(
+		"/tasks",
+		handlers.CreateTaskHandler(&sessionStorage, &userStorage, log),
+	)
 
 	baseGroup.GET("/register", handlers.RegisterPageHandler(log))
 	baseGroup.POST("/register", handlers.RegisterUserHandler(&userStorage, log))

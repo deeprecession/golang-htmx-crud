@@ -15,22 +15,30 @@ type Task struct {
 	IsDone bool
 }
 
-type TaskStorage struct {
-	log *slog.Logger
-	db  *sql.DB
+type User struct {
+	id       int
+	login    string
+	password string
+	db       *sql.DB
+	log      *slog.Logger
 }
 
-func NewTaskStorage(database *sql.DB, logger *slog.Logger) TaskStorage {
-	return TaskStorage{
-		logger,
-		database,
+func (user *User) GetTasks() (Tasks, error) {
+	const funcErrMsg = "models.User.GetTasks"
+
+	const query = `
+		SELECT task.id, task.title, task.is_done FROM task
+			JOIN user_task ON task.id = user_task.task_id
+			JOIN "user" ON "user".id = user_task.user_id
+			WHERE "user".login = $1;
+		`
+
+	stmt, err := user.db.Prepare(query)
+	if err != nil {
+		return Tasks{}, fmt.Errorf("%s: failed to prepare a statement: %w", funcErrMsg, err)
 	}
-}
 
-func (tl *TaskStorage) GetTasks() (Tasks, error) {
-	const funcErrMsg = "models.GetTaskList"
-
-	rows, err := tl.db.Query("SELECT * FROM tasks")
+	rows, err := stmt.Query(user.login)
 	if err != nil {
 		return Tasks{}, fmt.Errorf("%s: failed to query tasks table: %w", funcErrMsg, err)
 	}
@@ -57,70 +65,68 @@ func (tl *TaskStorage) GetTasks() (Tasks, error) {
 	return tasks, nil
 }
 
-func (tl *TaskStorage) NewTask(title string, isDone bool) (Task, error) {
-	const funcErrMsg = "models.NewTask"
+func (user *User) NewTask(title string, isDone bool) (Task, error) {
+	const funcErrMsg = "models.User.NewTask"
 
-	isTaskExist, err := tl.HasTask(title)
-	if err != nil {
-		return Task{}, fmt.Errorf("%s: failed to check is task exist: %w", funcErrMsg, err)
-	}
-
-	if isTaskExist {
-		return Task{}, ErrTaskAlreadyExist
-	}
-
-	stmt, err := tl.db.Prepare("INSERT INTO tasks(title, is_done) VALUES ($1, $2)")
+	stmt, err := user.db.Prepare("INSERT INTO task(title, is_done) VALUES ($1, $2) RETURNING id")
 	if err != nil {
 		return Task{}, fmt.Errorf("%s: failed to prepare a statement: %w", funcErrMsg, err)
 	}
 
 	defer stmt.Close()
 
-	_, err = stmt.Exec(title, isDone)
+	rows, err := stmt.Query(title, isDone)
 	if err != nil {
 		return Task{}, fmt.Errorf("%s: failed to execute a statement: %w", funcErrMsg, err)
 	}
 
-	task, err := tl.GetTaskByTitle(title)
-	if err != nil {
-		return Task{}, fmt.Errorf("%s: failed to get a task by title %w", funcErrMsg, err)
+	if !rows.Next() {
+		return Task{}, fmt.Errorf(
+			"%s: failed to get an id of a last inserted task: %w",
+			funcErrMsg,
+			err,
+		)
 	}
 
-	tl.log.Info("Succsesfully inserted:", "id", task.ID, "title", task.Title, "isDone", task.IsDone)
-
-	return task, nil
-}
-
-func (tl *TaskStorage) HasTask(title string) (bool, error) {
-	const funcErrMsg = "models.HasTask"
-
-	stmt, err := tl.db.Prepare("SELECT * FROM tasks WHERE title = $1")
+	var taskID int
+	err = rows.Scan(&taskID)
 	if err != nil {
-		return false, fmt.Errorf("%s: failed to prepare a statement: %w", funcErrMsg, err)
+		return Task{}, fmt.Errorf("%s: failed to scan a task id : %w", funcErrMsg, err)
+	}
+
+	defer rows.Close()
+
+	stmt, err = user.db.Prepare("INSERT INTO user_task(user_id, task_id) VALUES ($1, $2)")
+	if err != nil {
+		return Task{}, fmt.Errorf("%s: failed to prepare a statement: %w", funcErrMsg, err)
 	}
 
 	defer stmt.Close()
 
-	result, err := stmt.Query(title)
+	_, err = stmt.Exec(user.id, taskID)
 	if err != nil {
-		return false, fmt.Errorf("%s: failed to execute a query: %w", funcErrMsg, err)
+		return Task{}, fmt.Errorf("%s: failed to execute a statement: %w", funcErrMsg, err)
 	}
 
-	defer result.Close()
+	user.log.Info(
+		"Succsesfully inserted:",
+		"id",
+		taskID,
+		"title",
+		title,
+		"isDone",
+		isDone,
+	)
 
-	hasTask := result.Next()
+	task := Task{taskID, title, isDone}
 
-	if err = result.Err(); err != nil {
-		return false, fmt.Errorf("%s: failed to get next value: %w", funcErrMsg, err)
-	}
-
-	return hasTask, nil
+	return task, nil
 }
 
-func (tl *TaskStorage) RemoveTask(taskID int) error {
-	const funcErrMsg = "models.RemoveTask"
+func (user *User) RemoveTask(taskID int) error {
+	const funcErrMsg = "models.User.RemoveTask"
 
-	stmt, err := tl.db.Prepare("DELETE FROM tasks WHERE id = $1")
+	stmt, err := user.db.Prepare("DELETE FROM task WHERE id = $1")
 	if err != nil {
 		return fmt.Errorf("%s: failed to prepare a statement: %w", funcErrMsg, err)
 	}
@@ -135,15 +141,15 @@ func (tl *TaskStorage) RemoveTask(taskID int) error {
 	return nil
 }
 
-func (tl *TaskStorage) GetTaskByID(taskID int) (Task, error) {
-	const funcErrMsg = "models.GetTask"
+func (user *User) GetTaskByID(taskID int) (Task, error) {
+	const funcErrMsg = "models.User.GetTask"
 
-	stmt, err := tl.db.Prepare("SELECT * FROM tasks WHERE id = $1")
+	stmt, err := user.db.Prepare("SELECT * FROM task WHERE id = $1")
 	if err != nil {
 		return Task{}, fmt.Errorf("%s: failed to prepare a statement: %w", funcErrMsg, err)
 	}
 
-	task, err := tl.GetTask(stmt, strconv.Itoa(taskID))
+	task, err := user.GetTask(stmt, strconv.Itoa(taskID))
 	if err != nil {
 		return Task{}, fmt.Errorf("%s: failed to get a task: %w", funcErrMsg, err)
 	}
@@ -151,24 +157,8 @@ func (tl *TaskStorage) GetTaskByID(taskID int) (Task, error) {
 	return task, nil
 }
 
-func (tl *TaskStorage) GetTaskByTitle(title string) (Task, error) {
-	const funcErrMsg = "models.GetTaskByTitle"
-
-	stmt, err := tl.db.Prepare("SELECT * FROM tasks WHERE title = $1")
-	if err != nil {
-		return Task{}, fmt.Errorf("%s: failed to prepare a statement: %w", funcErrMsg, err)
-	}
-
-	task, err := tl.GetTask(stmt, title)
-	if err != nil {
-		return Task{}, fmt.Errorf("%s: failed to get a task: %w", funcErrMsg, err)
-	}
-
-	return task, nil
-}
-
-func (tl *TaskStorage) GetTask(stmt *sql.Stmt, title string) (Task, error) {
-	const funcErrMsg = "models.GetTask"
+func (user *User) GetTask(stmt *sql.Stmt, title string) (Task, error) {
+	const funcErrMsg = "models.User.GetTask"
 
 	result, err := stmt.Query(title)
 	if err != nil {
@@ -196,10 +186,10 @@ func (tl *TaskStorage) GetTask(stmt *sql.Stmt, title string) (Task, error) {
 	return task, nil
 }
 
-func (tl *TaskStorage) SetDoneStatus(taskID int, isDone bool) error {
-	const funcErrMsg = "models.ToggleDoneStatus"
+func (user *User) SetDoneStatus(taskID int, isDone bool) error {
+	const funcErrMsg = "models.User.ToggleDoneStatus"
 
-	stmt, err := tl.db.Prepare("UPDATE tasks SET is_done = $1 WHERE id = $2")
+	stmt, err := user.db.Prepare("UPDATE task SET is_done = $1 WHERE id = $2")
 	if err != nil {
 		return fmt.Errorf("%s: failed to prepare a statement: %w", funcErrMsg, err)
 	}
