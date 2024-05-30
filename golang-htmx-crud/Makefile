@@ -16,7 +16,7 @@ tidy:
 .PHONY: audit
 audit:
 	go mod verify
-	go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
+	go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run -c ./.golangci.yml
 
 
 ## build: builds a package

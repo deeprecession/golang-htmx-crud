@@ -25,7 +25,7 @@ air: up-db
 ## audit: run `audit` target for golang project
 .PHONY: audit
 audit:
-	$(MAKE) -C ./golang-htmx-crud audit
+	cd ./golang-htmx-crud && $(MAKE) audit
 
 
 ## up: run docker-compose up --build
