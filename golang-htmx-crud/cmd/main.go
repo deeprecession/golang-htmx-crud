@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"html/template"
 	"io"
 	"log/slog"
@@ -16,6 +17,21 @@ import (
 	"github.com/deeprecession/golang-htmx-crud/pkg/models"
 )
 
+func main() {
+	log := getLogger()
+
+	dbCon := getDB(log)
+	defer func() {
+		if err := dbCon.Close(); err != nil {
+			log.Error("failed to close database connection", "err", err)
+		}
+	}()
+
+	templates := newTemplate()
+
+	startServer(log, dbCon, templates)
+}
+
 type Templates struct {
 	templates *template.Template
 }
@@ -26,27 +42,12 @@ func newTemplate() *Templates {
 	}
 }
 
-func (t *Templates) Render(w io.Writer, name string, data interface{}, _ echo.Context) error {
-	return t.templates.ExecuteTemplate(w, name, data)
-}
-
-func main() {
-	server := echo.New()
-	server.Renderer = newTemplate()
-
-	slogHandlerOptions := slog.HandlerOptions{
-		Level: slog.LevelDebug,
-	}
-	stdoutTextHandler := slog.NewTextHandler(os.Stdout, &slogHandlerOptions)
-	log := slog.New(stdoutTextHandler)
-
-	server.Use(handlers.NewLoggerMiddleware(log))
-
+func getDB(log *slog.Logger) *sql.DB {
 	psqlInfo, err := db.GetPsqlInfoFromEnv()
 	if err != nil {
 		log.Error("failed to get posqlInfo:", "err", err)
 
-		return
+		os.Exit(1)
 	}
 
 	dbConnection, err := db.CreatePostgresDatabase(psqlInfo)
@@ -60,13 +61,30 @@ func main() {
 		dbConnection, err = db.CreatePostgresDatabase(psqlInfo)
 	}
 
-	defer func() {
-		if err := dbConnection.Close(); err != nil {
-			log.Error("failed to close database connection", "err", err)
-		}
-	}()
+	return dbConnection
+}
 
-	userStorage := models.GetUserStorage(log, dbConnection)
+func getLogger() *slog.Logger {
+	slogHandlerOptions := slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}
+
+	stdoutTextHandler := slog.NewTextHandler(os.Stdout, &slogHandlerOptions)
+
+	return slog.New(stdoutTextHandler)
+}
+
+func (t *Templates) Render(w io.Writer, name string, data interface{}, _ echo.Context) error {
+	return t.templates.ExecuteTemplate(w, name, data)
+}
+
+func startServer(log *slog.Logger, dbCon *sql.DB, templates *Templates) {
+	server := echo.New()
+	server.Renderer = templates
+
+	server.Use(handlers.NewLoggerMiddleware(log))
+
+	userStorage := models.GetUserStorage(log, dbCon)
 	sessionStorage := models.NewSessionStore()
 
 	baseGroup := server.Group("")
