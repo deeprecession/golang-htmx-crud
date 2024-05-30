@@ -38,6 +38,8 @@ func (user *User) GetTasks() (Tasks, error) {
 		return Tasks{}, fmt.Errorf("%s: failed to prepare a statement: %w", funcErrMsg, err)
 	}
 
+	defer stmt.Close()
+
 	rows, err := stmt.Query(user.login)
 	if err != nil {
 		return Tasks{}, fmt.Errorf("%s: failed to query tasks table: %w", funcErrMsg, err)
@@ -88,7 +90,12 @@ func (user *User) NewTask(title string, isDone bool) (Task, error) {
 		)
 	}
 
+	if err = rows.Err(); err != nil {
+		return Task{}, fmt.Errorf("%s: rows.Err(): %w", funcErrMsg, err)
+	}
+
 	var taskID int
+
 	err = rows.Scan(&taskID)
 	if err != nil {
 		return Task{}, fmt.Errorf("%s: failed to scan a task id : %w", funcErrMsg, err)

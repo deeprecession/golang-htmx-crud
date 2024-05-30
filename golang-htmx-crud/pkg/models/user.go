@@ -43,7 +43,7 @@ func (storage *UserStorage) Register(login, password string) error {
 		return fmt.Errorf("%s failed to add a user: %w", funcErrMsg, err)
 	}
 
-	storage.log.Info("inseted a new user", "login", login)
+	storage.log.Info("registered a new user", "login", login)
 
 	return nil
 }
@@ -55,13 +55,16 @@ func (storage *UserStorage) Login(login, password string) error {
 	if errors.Is(err, ErrUserNotFound) {
 		return ErrUserNotFound
 	}
+
 	if err != nil {
-		return fmt.Errorf("failed to login: %w", err)
+		return fmt.Errorf("%s failed to login: %w", funcErrMsg, err)
 	}
 
 	if storedUser.password != password {
 		return ErrBadPassword
 	}
+
+	storage.log.Info("succsessfully logged!", "login", login, "password", password)
 
 	return nil
 }
@@ -92,7 +95,7 @@ func (storage *UserStorage) GetUserWithLogin(login string) (User, error) {
 	}
 
 	if isUserNotExist {
-		return User{}, fmt.Errorf("%w", ErrUserNotFound)
+		return User{}, ErrUserNotFound
 	}
 
 	user := User{db: storage.database, log: storage.log}

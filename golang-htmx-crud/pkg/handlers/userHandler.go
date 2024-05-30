@@ -13,8 +13,8 @@ type UserAuth interface {
 }
 
 type SessionStore interface {
-	GetSession(*http.Request, string) (string, error)
-	SetSession(*http.ResponseWriter, string, string) error
+	GetSession(response *http.Request, key string) (string, error)
+	SetSession(response *http.ResponseWriter, key string, val string) error
 }
 
 func AuthorizationCheckMiddleware(store SessionStore, log *slog.Logger) echo.MiddlewareFunc {
@@ -68,7 +68,16 @@ func LoginUserHandler(
 			return ctx.Render(http.StatusOK, "login", loginResponse)
 		}
 
-		sessionStorage.SetSession(&ctx.Response().Writer, "session", login)
+		err = sessionStorage.SetSession(&ctx.Response().Writer, "session", login)
+		if err != nil {
+			loginResponse := LoginFormResponse{
+				LoginValue:    login,
+				PasswordValue: password,
+				Error:         err.Error(),
+			}
+
+			return ctx.Render(http.StatusOK, "login", loginResponse)
+		}
 
 		return ctx.Redirect(http.StatusFound, "/")
 	}
