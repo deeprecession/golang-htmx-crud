@@ -3,18 +3,8 @@ linters:
   disable:
     - gci # not using gci
     - wrapcheck # conflict with Echo
-    - err113 # want to Errorf wthout wrapping
+    - err113 # want to Errorf without wrapping
     - exhaustruct # because can't SomeStruct{}
     - depguard # don't want to clean main now
     - execinquery # Deprecated
-    - deadcode # Deprecated
-    - exhaustivestruct # Deprecated
-    - golint # Deprecated
-    - ifshort # Deprecated
-    - interfacer # Deprecated
-    - maligned # Deprecated
     - gomnd # Deprecated
-    - nosnakecase # Deprecated
-    - scopelint # Deprecated
-    - structcheck # Deprecated
-    - varcheck # Deprecated
