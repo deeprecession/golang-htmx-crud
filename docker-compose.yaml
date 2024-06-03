@@ -39,5 +39,12 @@ services:
     volumes:
       - db-volume:/var/lib/posgresql/data
 
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    env_file:
+      - .env
+
 volumes:
   db-volume:

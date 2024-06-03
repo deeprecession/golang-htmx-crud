@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"database/sql"
 	"io"
 	"log/slog"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/deeprecession/golang-htmx-crud/pkg/db"
 	"github.com/deeprecession/golang-htmx-crud/pkg/handlers"
@@ -19,6 +21,7 @@ import (
 type App struct {
 	log    *slog.Logger
 	db     *sql.DB
+	rdb    *redis.Client
 	server *echo.Echo
 }
 
@@ -32,11 +35,13 @@ func NewApp() (*App, error) {
 
 	dbCon := getDB(log)
 
+	rdb := getRedisDB(log)
+
 	templates := newTemplate()
 
-	server := getServer(templates, log, dbCon)
+	server := getServer(templates, log, dbCon, rdb)
 
-	return &App{log: log, db: dbCon, server: server}, nil
+	return &App{log: log, db: dbCon, rdb: rdb, server: server}, nil
 }
 
 type Templates struct {
@@ -49,10 +54,34 @@ func newTemplate() *Templates {
 	}
 }
 
+func getRedisDB(log *slog.Logger) *redis.Client {
+	addr := os.Getenv("REDIS_ADDR")
+	password := os.Getenv("REDIS_PASSWORD")
+
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     addr,
+		Password: password,
+		DB:       0,
+	})
+
+	ctx := context.Background()
+
+	_, err := rdb.Ping(ctx).Result()
+	if err != nil {
+		log.Error("Could not connect to Redis: ", "err", err)
+
+		os.Exit(1)
+	}
+
+	log.Info("Connected to Redis", "addr", addr)
+
+	return rdb
+}
+
 func getDB(log *slog.Logger) *sql.DB {
 	psqlInfo, err := db.GetPsqlInfoFromEnv()
 	if err != nil {
-		log.Error("failed to get posqlInfo:", "err", err)
+		log.Error("failed to get psqlInfo:", "err", err)
 
 		os.Exit(1)
 	}
@@ -67,6 +96,8 @@ func getDB(log *slog.Logger) *sql.DB {
 
 		dbConnection, err = db.CreatePostgresDatabase(psqlInfo)
 	}
+
+	log.Info("Connected to Postgresql", "posqlInfo", psqlInfo)
 
 	return dbConnection
 }
@@ -85,14 +116,19 @@ func (t *Templates) Render(w io.Writer, name string, data interface{}, _ echo.Co
 	return t.templates.ExecuteTemplate(w, name, data)
 }
 
-func getServer(templates *Templates, log *slog.Logger, dbCon *sql.DB) *echo.Echo {
+func getServer(
+	templates *Templates,
+	log *slog.Logger,
+	dbCon *sql.DB,
+	rdb redis.UniversalClient,
+) *echo.Echo {
 	server := echo.New()
 	server.Renderer = templates
 
 	server.Use(handlers.NewLoggerMiddleware(log))
 
 	userStorage := models.GetUserStorage(log, dbCon)
-	sessionStorage := models.NewSessionStore()
+	sessionStorage := models.NewSessionStore(rdb)
 
 	baseGroup := server.Group("")
 

@@ -48,17 +48,26 @@ type LoginFormResponse struct {
 
 func LoginUserHandler(
 	sessionStorage SessionStore,
-	userStorage UserAuth,
+	userAuth UserAuth,
 	log *slog.Logger,
 ) echo.HandlerFunc {
 	return func(ctx echo.Context) error {
 		login := ctx.FormValue("login")
 		password := ctx.FormValue("password")
 
-		log.Info("POST /login", "login", login, "password", password)
-
-		err := userStorage.Login(login, password)
+		err := userAuth.Login(login, password)
 		if err != nil {
+
+			log.Debug(
+				"POST /login failed to login",
+				"login",
+				login,
+				"password",
+				password,
+				"err",
+				err,
+			)
+
 			loginResponse := LoginFormResponse{
 				LoginValue:    login,
 				PasswordValue: password,
@@ -70,6 +79,16 @@ func LoginUserHandler(
 
 		err = sessionStorage.SetSession(&ctx.Response().Writer, "session", login)
 		if err != nil {
+			log.Debug(
+				"POST /login failed to login",
+				"login",
+				login,
+				"password",
+				password,
+				"err",
+				err,
+			)
+
 			loginResponse := LoginFormResponse{
 				LoginValue:    login,
 				PasswordValue: password,
@@ -78,6 +97,8 @@ func LoginUserHandler(
 
 			return ctx.Render(http.StatusOK, "login", loginResponse)
 		}
+
+		log.Debug("POST /login logged successfully", "login", login, "password", password)
 
 		return ctx.Redirect(http.StatusFound, "/")
 	}
@@ -97,14 +118,14 @@ type RegisterFormResponse struct {
 	Error         string
 }
 
-func RegisterUserHandler(userStorage UserAuth, log *slog.Logger) echo.HandlerFunc {
+func RegisterUserHandler(userAuth UserAuth, log *slog.Logger) echo.HandlerFunc {
 	return func(ctx echo.Context) error {
 		login := ctx.FormValue("login")
 		password := ctx.FormValue("password")
 
 		log.Info("POST /register", "login", login, "password", password)
 
-		err := userStorage.Register(login, password)
+		err := userAuth.Register(login, password)
 		if err != nil {
 			registerResponse := RegisterFormResponse{
 				login,

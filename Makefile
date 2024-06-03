@@ -7,6 +7,12 @@ up-db:
 	docker-compose up db -d
 
 
+## up-redis: `docker-compose up` a redis image
+.PHONY: up-redis
+up-redis:
+	docker-compose up redis -d
+
+
 ## run-app: start golang app with ./.env enviroment
 .PHONY: run-app
 run-app: up-db
@@ -16,7 +22,7 @@ run-app: up-db
 
 ## air: run `air` for ./golang-htmx-crud with ./.env enviroment
 .PHONY: air
-air: up-db
+air: up-db up-redis
 	@set -a; \
 		. ./.env; \
 		$(MAKE) -C ./golang-htmx-crud air
