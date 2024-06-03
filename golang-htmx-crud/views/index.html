@@ -103,12 +103,15 @@
         <form action="/register" method="POST">
             <div id="register-form-login" style="display: flex;">
                 <label>login</label>
-                <input type="text" name="login" value="{{ .LoginValue }}">
+                <input type="text" name="login"
+                {{ if .LoginValue }} value="{{ .LoginValue }}" {{ end }}
+                >
             </div>
 
             <div id="register-form-password" style="display: flex;">
                 <label>password</label>
-                <input type="password" name="password" value="{{ .PasswordValue }}">
+                <input type="password" name="password"
+                {{ if .PasswordValue }} value="{{ .PasswordValue }}" {{ end }}>
             </div>
 
             {{ if .Error }}
@@ -133,12 +136,14 @@
         <form action="/login" method="POST">
             <div id="login-form-login" style="display: flex;">
                 <label>login</label>
-                <input type="text" name="login" value="{{ .LoginValue }}">
+                <input type="text" name="login"
+                    {{ if .LoginValue }} value="{{ .LoginValue }}" {{ end }}>
             </div>
 
             <div id="login-form-password" style="display: flex;">
                 <label>password</label>
-                <input type="password" name="password" value="{{ .PasswordValue }}">
+                <input type="password" name="password"
+                {{ if .PasswordValue }} value="{{ .PasswordValue }}" {{ end }}>
             </div>
 
             {{ if .Error }}
