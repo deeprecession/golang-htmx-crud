@@ -49,8 +49,10 @@ type Templates struct {
 }
 
 func newTemplate() *Templates {
+	tmpl := template.Must(template.ParseGlob("./templates/**/*.html"))
+
 	return &Templates{
-		templates: template.Must(template.ParseGlob("./views/*.html")),
+		templates: tmpl,
 	}
 }
 

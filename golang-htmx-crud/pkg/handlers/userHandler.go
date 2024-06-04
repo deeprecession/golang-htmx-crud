@@ -36,7 +36,7 @@ func LoginPageHandler(log *slog.Logger) echo.HandlerFunc {
 	return func(ctx echo.Context) error {
 		log.Info("GET /login")
 
-		return ctx.Render(http.StatusOK, "login", nil)
+		return ctx.Render(http.StatusOK, "login-page", nil)
 	}
 }
 
@@ -74,7 +74,7 @@ func LoginUserHandler(
 				Error:         err.Error(),
 			}
 
-			return ctx.Render(http.StatusOK, "login", loginResponse)
+			return ctx.Render(http.StatusOK, "login-page", loginResponse)
 		}
 
 		err = sessionStorage.SetSession(&ctx.Response().Writer, "session", login)
@@ -95,7 +95,7 @@ func LoginUserHandler(
 				Error:         err.Error(),
 			}
 
-			return ctx.Render(http.StatusOK, "login", loginResponse)
+			return ctx.Render(http.StatusOK, "login-page", loginResponse)
 		}
 
 		log.Debug("POST /login logged successfully", "login", login, "password", password)
@@ -108,7 +108,7 @@ func RegisterPageHandler(log *slog.Logger) echo.HandlerFunc {
 	return func(ctx echo.Context) error {
 		log.Info("GET /register")
 
-		return ctx.Render(http.StatusOK, "register", nil)
+		return ctx.Render(http.StatusOK, "register-page", nil)
 	}
 }
 
@@ -133,7 +133,7 @@ func RegisterUserHandler(userAuth UserAuth, log *slog.Logger) echo.HandlerFunc {
 				err.Error(),
 			}
 
-			return ctx.Render(http.StatusOK, "register", registerResponse)
+			return ctx.Render(http.StatusOK, "register-form", registerResponse)
 		}
 
 		return ctx.Redirect(http.StatusFound, "/")

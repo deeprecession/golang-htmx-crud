@@ -40,6 +40,6 @@ func BaseHandler(
 
 		page := models.NewPage(tasklist)
 
-		return ctx.Render(http.StatusOK, "index", page)
+		return ctx.Render(http.StatusOK, "tasklist-page", page)
 	}
 }
