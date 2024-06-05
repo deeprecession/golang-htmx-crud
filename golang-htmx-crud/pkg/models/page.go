@@ -1,8 +1,9 @@
 package models
 
 type Page struct {
-	Data Tasks
-	Form FormData
+	Tasks Tasks
+	User  User
+	Form  FormData
 }
 
 func (p *Page) NewFormData() FormData {
@@ -21,9 +22,10 @@ func NewFormData() FormData {
 	}
 }
 
-func NewPage(tasklist Tasks) Page {
+func NewPage(tasklist Tasks, user User) Page {
 	return Page{
-		Data: tasklist,
-		Form: NewFormData(),
+		Tasks: tasklist,
+		User:  user,
+		Form:  NewFormData(),
 	}
 }

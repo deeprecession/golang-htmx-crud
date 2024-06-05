@@ -60,7 +60,7 @@ func (storage *UserStorage) Login(login, password string) error {
 		return fmt.Errorf("%s failed to login: %w", funcErrMsg, err)
 	}
 
-	if storedUser.password != password {
+	if storedUser.Password != password {
 		return ErrBadPassword
 	}
 
@@ -100,7 +100,7 @@ func (storage *UserStorage) GetUserWithLogin(login string) (User, error) {
 
 	user := User{db: storage.database, log: storage.log}
 
-	err = rows.Scan(&user.id, &user.login, &user.password)
+	err = rows.Scan(&user.ID, &user.Login, &user.Password)
 	if err != nil {
 		return User{}, fmt.Errorf("%s failed to scan a user: %w", funcErrMsg, err)
 	}

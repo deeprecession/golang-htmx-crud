@@ -16,9 +16,9 @@ type Task struct {
 }
 
 type User struct {
-	id       int
-	login    string
-	password string
+	ID       int
+	Login    string
+	Password string
 	db       *sql.DB
 	log      *slog.Logger
 }
@@ -40,7 +40,7 @@ func (user *User) GetTasks() (Tasks, error) {
 
 	defer stmt.Close()
 
-	rows, err := stmt.Query(user.login)
+	rows, err := stmt.Query(user.Login)
 	if err != nil {
 		return Tasks{}, fmt.Errorf("%s: failed to query tasks table: %w", funcErrMsg, err)
 	}
@@ -110,7 +110,7 @@ func (user *User) NewTask(title string, isDone bool) (Task, error) {
 
 	defer stmt.Close()
 
-	_, err = stmt.Exec(user.id, taskID)
+	_, err = stmt.Exec(user.ID, taskID)
 	if err != nil {
 		return Task{}, fmt.Errorf("%s: failed to execute a statement: %w", funcErrMsg, err)
 	}

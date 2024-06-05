@@ -11,14 +11,28 @@
     </head>
 
     <body>
+        {{ template "user-info" .User }}
+        <hr>
         {{ template "create-task-form" .Form }}
         <hr>
-        {{ template "display" .Data }}
+        {{ template "display" .Tasks }}
     </body>
 
     {{ template "htmx-before-swap" . }}
 
 </html>
+{{ end }}
+
+
+{{ block "user-info" . }}
+
+    <div style="display: flex; flex-direction: column">
+        <div style="text-decoration: underline;">userinfo:</div>
+        <div> login: {{ .Login }} </div>
+        <div> password: {{ .Password }} </div>
+        <div> id: {{ .ID }} </div>
+    </div>
+
 {{ end }}
 
 

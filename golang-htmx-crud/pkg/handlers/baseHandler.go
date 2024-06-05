@@ -38,7 +38,7 @@ func BaseHandler(
 			log.Error("failed to get tasks:", "err", err)
 		}
 
-		page := models.NewPage(tasklist)
+		page := models.NewPage(tasklist, user)
 
 		return ctx.Render(http.StatusOK, "tasklist-page", page)
 	}
