@@ -40,6 +40,18 @@ up:
 	docker-compose up --build
 
 
+## tailwind-build: create output.css from input.css in ./templates/styles
+.PHONY: tailwind-build
+tailwind-build:
+	npx tailwindcss build -i ./golang-htmx-crud/assets/css/tailwind.css -o ./golang-htmx-crud/assets/css/style.css
+
+
+## tailwind-build-watch: create output.css from input.css in ./templates/styles and watches for changes
+.PHONY: tailwind-build-watch
+tailwind-build-watch:
+	npx tailwindcss build -i ./golang-htmx-crud/assets/css/tailwind.css -o ./golang-htmx-crud/assets/css/style.css --watch
+
+
 ## help: print this help message
 .PHONY: help
 help:

@@ -36,7 +36,6 @@ run: build
 air: tidy
 	air
 
-
 ## help: print this help message
 .PHONY: help
 help:

@@ -134,6 +134,8 @@ func getServer(
 
 	baseGroup := server.Group("")
 
+	baseGroup.Static("/assets", "assets")
+
 	baseGroup.Use(echoprometheus.NewMiddleware("myapp"))
 	baseGroup.GET("/metrics", echoprometheus.NewHandler())
 
