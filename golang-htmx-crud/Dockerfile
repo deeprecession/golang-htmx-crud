@@ -19,7 +19,8 @@ FROM alpine
 
 WORKDIR /
 
-ADD views views
+ADD templates templates
+ADD assets assets
 COPY --from=build-stage /htmx-golang-crud htmx-golang-crud
 
 EXPOSE 42069
