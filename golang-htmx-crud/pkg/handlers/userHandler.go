@@ -136,6 +136,6 @@ func RegisterUserHandler(userAuth UserAuth, log *slog.Logger) echo.HandlerFunc {
 			return ctx.Render(http.StatusOK, "register-form", registerResponse)
 		}
 
-		return ctx.Redirect(http.StatusFound, "/")
+		return ctx.Redirect(http.StatusFound, "/login")
 	}
 }
