@@ -38,7 +38,7 @@ func (store *SessionStore) GetSession(request *http.Request, key string) (string
 
 	value, err := store.rdb.Get(ctx, cookie.Value).Result()
 	if err != nil {
-		if err == redis.Nil {
+		if errors.Is(err, redis.Nil) {
 			return "", ErrSessionNotFound
 		}
 

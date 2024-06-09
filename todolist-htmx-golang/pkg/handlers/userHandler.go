@@ -57,7 +57,6 @@ func LoginUserHandler(
 
 		err := userAuth.Login(login, password)
 		if err != nil {
-
 			log.Debug(
 				"POST /login failed to login",
 				"login",
