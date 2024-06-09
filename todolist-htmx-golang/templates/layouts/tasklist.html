@@ -1,0 +1,90 @@
+{{ block "tasklist-page" . }}
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title></title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <script src="https://unpkg.com/htmx.org@1.9.12" integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2" crossorigin="anonymous"></script>
+
+        <link rel="stylesheet" href="/assets/css/style.css" />
+    </head>
+
+<body class="bg-gray-100 p-6">
+    <div class="flex space-x-4">
+        <aside class="w-1/4 bg-white p-4 rounded shadow h-60 overflow-y-auto">
+            {{ template "user-info" .User }}
+        </aside>
+        <main class="flex-1 flex flex-col items-center">
+            <section class="w-full max-w-2xl mb-4">
+                {{ template "create-task-form" .Form }}
+            </section>
+            <section class="w-full max-w-2xl">
+                {{ template "display" .Tasks }}
+            </section>
+        </main>
+    </div>
+</body>
+
+{{ template "htmx-before-swap" . }}
+
+</html>
+{{ end }}
+
+
+{{ block "user-info" . }}
+<div class="flex flex-col space-y-2">
+    <div class="underline font-bold">User Info:</div>
+    <div>Login: {{ .Login }}</div>
+    <div>Password: {{ .Password }}</div>
+    <div>ID: {{ .ID }}</div>
+</div>
+{{ end }}
+
+
+{{ block "create-task-form" . }}
+<form hx-swap="outerHTML" hx-post="/tasks" class="space-y-4 bg-white p-4 rounded shadow">
+    <input
+        {{if .Values.Title }} value="{{ .Values.Title }}" {{ end }}
+        type="text" name="title" class="border p-2 rounded w-full" placeholder="Task Title"/>
+
+    {{ if .Errors.Title }}
+        <div class="text-red-500"> {{ .Errors.Title }} </div>
+    {{ end }}
+
+    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full">Create Task</button>
+</form>
+{{ end }}
+
+
+{{ block "display" . }}
+<div id="tasks" class="flex flex-col items-center space-y-4">
+    {{ range . }}
+        {{ template "task" . }}
+    {{ end }}
+</div>
+{{ end }}
+
+
+{{ block "task" . }}
+<div id="task-{{ .ID }}" class="flex items-center p-4 bg-white rounded shadow space-x-4 border-l-4 border-blue-500 w-full max-w-2xl">
+    <div hx-target="#task-{{ .ID }}" hx-swap="outerHTML" hx-put="/task/{{ .ID }}" class="cursor-pointer flex-1">
+        <span class="{{ if .IsDone }}line-through text-gray-500{{ end }}">{{ .Title }}</span>
+        <span>{{ if .IsDone }}✅{{ end }}</span>
+    </div>
+
+    <div hx-target="#task-{{ .ID }}" hx-swap="outerHTML" hx-delete="/task/{{ .ID }}" class="cursor-pointer text-gray-800 hover:text-red-600">
+        <svg class="w-6 h-6" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 7h14m-9 3v8m4-8v8M10 3h4a1 1 0 0 1 1 1v3H9V4a1 1 0 0 1 1-1ZM6 7h12v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7Z"/>
+        </svg>
+    </div>
+</div>
+{{ end }}
+
+
+{{ block "oob-task" . }}
+<div id="tasks" hx-swap-oob="afterbegin">
+    {{ template "task" . }}
+</div>
+{{ end }}

@@ -1,0 +1,56 @@
+{{ block "login-page" . }}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>login</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link rel="stylesheet" href="/assets/css/style.css" />
+
+    <script src="https://unpkg.com/htmx.org@1.9.12"
+        integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2"
+        crossorigin="anonymous"></script>
+</head>
+
+<body class="flex items-center justify-center h-screen bg-gray-100">
+    {{ template "login-form" . }}
+</body>
+
+{{ template "htmx-before-swap" . }}
+
+</html>
+{{ end }}
+
+
+{{ block "login-form" . }}
+<div id="login-form" class="w-full max-w-md mx-auto bg-gray-300 p-6 rounded-lg shadow-lg">
+    <div class="text-2xl font-bold mb-4 text-center">Login</div>
+
+    <form action="/login" method="POST" hx-target="#login-form" class="space-y-4">
+        <div id="login-form-login" class="flex flex-col">
+            <label class="font-bold mb-2">Login</label>
+            <input class="p-2 border border-gray-400 rounded" type="text" name="login" {{ if .LoginValue }}
+                value="{{ .LoginValue }}" {{ end }} />
+        </div>
+
+        <div id="login-form-password" class="flex flex-col">
+            <label class="font-bold mb-2">Password</label>
+            <input class="p-2 border border-gray-400 rounded" type="password" name="password" {{ if
+                .PasswordValue }} value="{{ .PasswordValue }}" {{ end }} />
+        </div>
+
+        {{ if .Error }}
+            <div class="ml-5 text-red-600 font-bold mt-2">> {{ .Error }}!</div>
+        {{ end }}
+
+        <div class="flex justify-center">
+            <button type="submit"
+                class="px-4 py-2 text-white bg-purple-500 font-semibold rounded-3xl shadow-xl shadow-purple-700 hover:bg-purple-700">
+                Login
+            </button>
+        </div>
+    </form>
+</div>
+{{ end }}

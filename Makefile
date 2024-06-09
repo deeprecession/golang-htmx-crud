@@ -1,4 +1,4 @@
-PROJECT_NAME := golang-htmx-crud
+PROJECT_NAME := todolist-htmx-golang
 
 
 ## up-db: `docker-compose up` a db image
@@ -17,21 +17,21 @@ up-redis:
 .PHONY: run-app
 run-app: up-db
 	./.env
-	$(MAKE) -C ./golang-htmx-crud run
+	$(MAKE) -C ./$(PROJECT_NAME) run
 
 
-## air: run `air` for ./golang-htmx-crud with ./.env enviroment
+## air: run `air` for project with ./.env enviroment
 .PHONY: air
 air: up-db up-redis
 	@set -a; \
 		. ./.env; \
-		$(MAKE) -C ./golang-htmx-crud air
+		$(MAKE) -C ./$(PROJECT_NAME) air
 
 
 ## audit: run `audit` target for golang project
 .PHONY: audit
 audit:
-	cd ./golang-htmx-crud && $(MAKE) audit
+	cd ./$(PROJECT_NAME) && $(MAKE) audit
 
 
 ## up: run docker-compose up --build
@@ -43,13 +43,13 @@ up:
 ## tailwind-build: create output.css from input.css in ./templates/styles
 .PHONY: tailwind-build
 tailwind-build:
-	npx tailwindcss build -i ./golang-htmx-crud/assets/css/tailwind.css -o ./golang-htmx-crud/assets/css/style.css
+	npx tailwindcss build -i ./$(PROJECT_NAME)/assets/css/tailwind.css -o ./$(PROJECT_NAME)/assets/css/style.css
 
 
 ## tailwind-build-watch: create output.css from input.css in ./templates/styles and watches for changes
 .PHONY: tailwind-build-watch
 tailwind-build-watch:
-	npx tailwindcss build -i ./golang-htmx-crud/assets/css/tailwind.css -o ./golang-htmx-crud/assets/css/style.css --watch
+	npx tailwindcss build -i ./$(PROJECT_NAME)/assets/css/tailwind.css -o ./$(PROJECT_NAME)/assets/css/style.css --watch
 
 
 ## help: print this help message
