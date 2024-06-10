@@ -1,4 +1,4 @@
-# golang-htmx-crud
+# todolist-htmx-golang
 
 A simplest tasklist web application as a show case for HTMX in Golang
 
